@@ -1,0 +1,15 @@
+build/*
+dist/*
+public/*
+**/out/*
+**/.next/*
+**/node_modules/*
+
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+commitlint.config.js
+
+src/components/ui/**
+vite.config.ts
+src/lib/utils.ts
