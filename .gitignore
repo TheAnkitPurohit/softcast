@@ -145,3 +145,5 @@ tsconfig.tsbuildinfo
 vite.config.ts.timestamp-*.mjs
 
 .script
+# clerk configuration (can include secrets)
+/.clerk/
