@@ -28,7 +28,6 @@ const JobCard = ({ job }: { job: Job }) => {
             <h3 className='font-semibold text-lg text-gray-900 mb-1'>
               {job.title}
             </h3>
-            <p className='text-gray-600 mb-2'>{job.company}</p>
           </div>
           <Badge variant='secondary' className='ml-2'>
             {job.type}
@@ -46,7 +45,7 @@ const JobCard = ({ job }: { job: Job }) => {
           </div>
           <div className='flex items-center gap-1'>
             <Clock className='h-4 w-4' />
-            <span>Posted {formatDate(job.postedDate)}</span>
+            <span>Posted {formatDate(new Date(job.postedDate))}</span>
           </div>
         </div>
 
