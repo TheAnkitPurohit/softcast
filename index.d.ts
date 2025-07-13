@@ -55,30 +55,13 @@ declare interface NavbarProps {
   user: User | undefined
 }
 
-declare interface SearchResult {
-  video: {
-    id: string
-    videoId: string
-    title: string
-    thumbnailUrl: string
-  }
-  user: {
-    id: string
-    name: string | null
-    image: string | null
-  } | null
-}
-
 declare interface VideoCardProps {
   id: string
   title: string
   thumbnail: string
-  userImg: string
-  username: string
   createdAt: Date
   views: number
-  visibility: Visibility
-  duration: number | null
+  isPublic: boolean
 }
 
 declare interface VideoDetailHeaderProps {
@@ -121,29 +104,6 @@ declare interface VideoDetails {
   tags: string | string[]
   visibility: Visibility
   duration?: number | null
-}
-
-declare interface BunnyVideoResponse {
-  guid: string
-  status: number
-  encodeProgress?: number
-}
-
-declare type ApiResponse<T> =
-  | ({ success: true; error: null } & T)
-  | { success: false; error: string }
-
-declare interface ApiFetchOptions {
-  method?: string
-  headers?: Record<string, string>
-  body?: object
-  expectJson?: boolean
-  bunnyType: 'stream' | 'storage'
-}
-
-declare interface BunnyStreamApiOptions {
-  method?: string
-  body?: object
 }
 
 declare interface VideoUploadUrlResponse {
@@ -294,4 +254,58 @@ interface PaginationResult<T> {
 declare interface RecordingHandlers {
   onDataAvailable: (e: BlobEvent) => void
   onStop: () => void
+}
+
+declare interface ApiResponse<T> {
+  success: boolean
+  statusCode: number
+  request: {
+    ip: string
+    method: string
+    url: string
+  }
+  message: string
+  data: T
+}
+
+declare interface PaginatedList<T> {
+  docs: T[]
+  totalDocs: number
+  limit: number
+  page: number
+  totalPages: number
+  pagingCounter: number
+  hasPrevPage: boolean
+  hasNextPage: boolean
+  prevPage: number | null
+  nextPage: number | null
+}
+
+interface Video {
+  _id: string
+  title: string
+  description?: string
+  key: string
+  s3Url: string
+  fileSize: number
+  contentType: string
+  duration?: number
+  thumbnailUrl?: string
+  userId: string
+  isPublic: boolean
+  tags: string[]
+  views: number
+  likes: number
+  createdAt: Date
+  updatedAt: Date
+}
+
+declare interface VideoResponse {
+  pagination: {
+    limit: number
+    page: number
+    pages: number
+    total: number
+  }
+  videos: Video[]
 }

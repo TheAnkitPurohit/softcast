@@ -1,5 +1,9 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
+
+import dbConnect from '@/lib/mongodb'
+import Video from '@/models/Video.model'
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION!,
@@ -11,6 +15,14 @@ const s3Client = new S3Client({
 
 export async function POST(request: NextRequest) {
   try {
+    await dbConnect()
+
+    const { userId } = await auth()
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File
 
@@ -28,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     // Generate unique filename
     const timestamp = Date.now()
-    const fileName = `screen-recordings/${timestamp}-${file.name}`
+    const key = `screen-recordings/${userId}/${timestamp}-${file.name}`
 
     // Convert file to buffer
     const buffer = Buffer.from(await file.arrayBuffer())
@@ -36,7 +48,7 @@ export async function POST(request: NextRequest) {
     // Upload to S3
     const uploadCommand = new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET_NAME!,
-      Key: fileName,
+      Key: key,
       Body: buffer,
       ContentType: file.type,
       Metadata: {
@@ -49,16 +61,35 @@ export async function POST(request: NextRequest) {
     await s3Client.send(uploadCommand)
 
     // Generate the S3 URL
-    const s3Url = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`
+    const s3Url = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`
+
+    // New Message - 7/13/2025 10:20:00 AM
+    const title = `New Message - ${new Date().toLocaleString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    })}`
+
+    const video = new Video({
+      title,
+      key,
+      s3Url,
+      fileSize: file.size,
+      contentType: file.type,
+      userId,
+    })
+
+    const savedVideo = await video.save()
 
     return NextResponse.json({
       success: true,
       message: 'File uploaded successfully',
       data: {
-        fileName,
-        s3Url,
-        fileSize: file.size,
-        contentType: file.type,
+        id: savedVideo._id,
       },
     })
   } catch (error) {

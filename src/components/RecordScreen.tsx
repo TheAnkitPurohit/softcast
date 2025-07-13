@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useRef, useState } from 'react'
+import { toast } from 'react-hot-toast'
 
 import { ICONS } from '@/constants'
 import { useScreenRecording } from '@/hooks/useScreenRecording'
@@ -39,13 +40,11 @@ const RecordScreen = () => {
   }
 
   const [isUploading, setIsUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
 
   const goToUpload = async () => {
     if (!recordedBlob) return
 
     setIsUploading(true)
-    setUploadProgress(0)
 
     try {
       // Create a file from the blob
@@ -74,31 +73,14 @@ const RecordScreen = () => {
       const result = await response.json()
 
       if (result.success) {
-        // Store the S3 URL and metadata
-        sessionStorage.setItem(
-          'recordedVideo',
-          JSON.stringify({
-            url: result.data.s3Url,
-            name: result.data.fileName,
-            type: result.data.contentType,
-            size: result.data.fileSize,
-            duration: recordingDuration || 0,
-          })
-        )
-
-        // Navigate to upload page
-        router.push('/upload')
-        closeModal()
+        router.push(`/share/${result.data.id}`)
       } else {
         throw new Error(result.error || 'Upload failed')
       }
     } catch (error) {
-      console.error('Upload error:', error)
-      // You can replace this with a proper toast notification or error state
-      console.error('Failed to upload video. Please try again.')
+      toast.error('Failed to upload video. Please try again.')
     } finally {
       setIsUploading(false)
-      setUploadProgress(0)
     }
   }
 

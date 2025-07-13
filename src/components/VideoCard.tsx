@@ -4,24 +4,24 @@ import Link from 'next/link'
 import { useState } from 'react'
 
 import ImageWithFallback from '@/components/ImageWithFallback'
+import { useUser } from '@/contexts/UserContext'
 
 const VideoCard = ({
   id,
   title,
   thumbnail,
-  userImg,
-  username,
   createdAt,
   views,
-  visibility,
-  duration,
+  isPublic,
 }: VideoCardProps) => {
+  const { user } = useUser()
+
   const [copied, setCopied] = useState(false)
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
-    navigator.clipboard.writeText(`${window.location.origin}/video/${id}`)
+    navigator.clipboard.writeText(`${window.location.origin}/share/${id}`)
     setCopied(true)
     setTimeout(() => {
       setCopied(false)
@@ -29,9 +29,11 @@ const VideoCard = ({
   }
 
   return (
-    <Link href={`/video/${id}`} className='video-card'>
+    <Link href={`/share/${id}`} className='video-card'>
       <Image
-        src={thumbnail}
+        src={
+          thumbnail && thumbnail != '' ? thumbnail : '/assets/images/video1.png'
+        }
         width={290}
         height={160}
         alt='thumbnail'
@@ -41,15 +43,17 @@ const VideoCard = ({
         <div>
           <figure>
             <ImageWithFallback
-              src={userImg}
+              src={user?.avatarUrl ?? ''}
               width={34}
               height={34}
               alt='avatar'
               className='rounded-full aspect-square'
             />
             <figcaption>
-              <h3>{username}</h3>
-              <p>{visibility}</p>
+              <h3>
+                {user?.firstName} {user?.lastName}
+              </h3>
+              <p>{isPublic ? 'Public' : 'Private'}</p>
             </figcaption>
           </figure>
           <aside>
@@ -62,14 +66,16 @@ const VideoCard = ({
             <span>{views}</span>
           </aside>
         </div>
-        <h2>
-          {title} -{' '}
-          {createdAt.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-          })}
-        </h2>
+        <h2>{title}</h2>
+        {createdAt && (
+          <p className='text-sm text-gray-500'>
+            {new Date(createdAt).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })}
+          </p>
+        )}
       </article>
       <button onClick={handleCopy} className='copy-btn'>
         <Image
@@ -81,9 +87,6 @@ const VideoCard = ({
           height={18}
         />
       </button>
-      {duration && (
-        <div className='duration'>{Math.ceil(duration / 60)}min</div>
-      )}
     </Link>
   )
 }

@@ -1,6 +1,4 @@
-'use client'
-
-import { SignInButton, useAuth, UserButton } from '@clerk/nextjs'
+import { SignInButton, UserButton } from '@clerk/nextjs'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -9,9 +7,6 @@ interface NavbarProps {
 }
 
 const Navbar = ({ isSignedIn }: NavbarProps) => {
-  const auth = useAuth()
-
-  console.log({ auth })
   return (
     <header className='navbar'>
       <nav>
