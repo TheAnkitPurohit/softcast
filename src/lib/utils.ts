@@ -33,19 +33,22 @@ export const getEnv = (key: string): string => {
 };
 
 export const getMediaStreams = async (
-  withMic: boolean
+  captureType: CaptureType,
+  micDeviceId: MicDeviceId
 ): Promise<MediaStreams> => {
-  console.log({navigator})
   const displayStream = await navigator.mediaDevices.getDisplayMedia({
-    video: DEFAULT_VIDEO_CONFIG,
+    video: {
+      ...DEFAULT_VIDEO_CONFIG,
+      displaySurface: captureType,
+    },
     audio: true,
   });
 
   const hasDisplayAudio = displayStream.getAudioTracks().length > 0;
   let micStream: MediaStream | null = null;
 
-  if (withMic) {
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  if (micDeviceId && micDeviceId !== 'none') {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: micDeviceId } });
     micStream
       .getAudioTracks()
       .forEach((track: MediaStreamTrack) => (track.enabled = true));

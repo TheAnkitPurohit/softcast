@@ -44,12 +44,15 @@ export const useScreenRecording = () => {
     }))
   }
 
-  const startRecording = async (withMic = true) => {
+  const startRecording = async (
+    captureType: CaptureType = 'screen',
+    micDeviceId: MicDeviceId = 'default'
+  ) => {
     try {
       stopRecording()
 
       const { displayStream, micStream, hasDisplayAudio } =
-        await getMediaStreams(withMic)
+        await getMediaStreams(captureType, micDeviceId)
       const combinedStream = new MediaStream() as ExtendedMediaStream
 
       displayStream

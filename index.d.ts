@@ -309,3 +309,6 @@ declare interface VideoResponse {
   }
   videos: Video[]
 }
+
+type CaptureType = 'screen' | 'window' | 'tab'
+type MicDeviceId = string | 'none'
