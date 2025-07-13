@@ -1,8 +1,9 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import React from 'react'
+import { Toaster } from 'react-hot-toast'
 
-import ProtectedNavbar from '@/components/header/ProtectedNavbar'
+import Navbar from '@/components/Navbar'
 
 const Layout = async ({ children }: { children: React.ReactNode }) => {
   const { userId } = await auth()
@@ -13,9 +14,11 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
 
   return (
     <>
-      <ProtectedNavbar />
+      <Navbar />
 
       <div className='my-10'>{children}</div>
+
+      <Toaster position='top-center' />
     </>
   )
 }

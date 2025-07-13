@@ -1,8 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Softcast
+
+A Next.js application for screen recording and video upload to AWS S3.
+
+## Features
+
+- Screen recording functionality
+- Direct upload to AWS S3
+- Video playback and management
+- Modern UI with Tailwind CSS
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- AWS S3 bucket with proper permissions
+- AWS credentials with S3 access
+
+### Environment Setup
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```bash
+# AWS Configuration
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your_access_key_id_here
+AWS_SECRET_ACCESS_KEY=your_secret_access_key_here
+AWS_S3_BUCKET_NAME=your_s3_bucket_name_here
+
+# Next.js Configuration
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key_here
+CLERK_SECRET_KEY=your_clerk_secret_key_here
+```
+
+### AWS S3 Setup
+
+1. Create an S3 bucket in your AWS account
+2. Configure CORS for your bucket (if needed for direct browser uploads)
+3. Create an IAM user with S3 permissions
+4. Add the credentials to your environment variables
+
+### Installation
+
+Install dependencies:
+
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+```
+
+Run the development server:
 
 ```bash
 npm run dev
@@ -15,8 +65,6 @@ bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

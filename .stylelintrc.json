@@ -4,6 +4,7 @@
     "at-rule-no-unknown": null,
     "at-rule-no-deprecated": null,
     "lightness-notation": null,
-    "hue-degree-notation": null
+    "hue-degree-notation": null,
+    "property-no-vendor-prefix": null
   }
 }

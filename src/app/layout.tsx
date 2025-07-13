@@ -1,25 +1,23 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-
+import { Karla } from 'next/font/google'
+import './globals.css'
+import { satoshi } from '../fonts/font'
 import { ClerkProvider } from '@clerk/nextjs'
 
-import './globals.css'
-
-const inter = Inter({
+const geistKarla = Karla({
+  variable: '--font-geist-karla',
   subsets: ['latin'],
-  variable: '--font-inter',
 })
 
 export const metadata: Metadata = {
-  title: 'JobInsider - Find Your Dream Job',
-  description:
-    'Discover the best job opportunities with JobInsider. Browse thousands of jobs, filter by location, salary, and more.',
-  keywords: 'jobs, career, employment, job search, hiring',
-  authors: [{ name: 'JobInsider Team' }],
-  viewport: 'width=device-width, initial-scale=1',
+  title: 'SoftCast',
+  description: 'A Screen Sharing App',
+  icons: {
+    icon: '/assets/icons/logo.svg',
+  },
 }
 
-export default function RootLayout({
+export default function Layout({
   children,
 }: Readonly<{
   children: React.ReactNode
@@ -28,9 +26,9 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang='en'>
         <body
-          className={`${inter.variable} antialiased bg-gray-50 font-sans min-h-screen`}
+          className={`${geistKarla.variable} ${satoshi.variable} font-karla antialiased`}
         >
-          <main className='min-h-screen'>{children}</main>
+          {children}
         </body>
       </html>
     </ClerkProvider>
