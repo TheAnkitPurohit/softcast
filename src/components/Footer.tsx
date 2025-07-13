@@ -27,7 +27,7 @@ const Footer = () => {
           <p className='text-gray-100 text-sm max-w-xl mx-auto md:mx-0'>
             Ankit is passionate about building seamless, user-friendly tools
             that empower teams to communicate and collaborate more effectively.
-            This screencast platform was crafted for internal use at{' '}
+            This SkyCast platform was crafted for internal use at{' '}
             <span className='text-blue-100 font-semibold'>softcolon</span> to
             help our teams move faster and stay connected.
           </p>

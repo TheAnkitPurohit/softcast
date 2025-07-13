@@ -15,13 +15,13 @@ const Navbar = ({ isSignedIn }: NavbarProps) => {
           className='flex items-center gap-2.5'
         >
           <Image
-            src='/assets/icons/logo.svg'
+            src='/assets/icons/logo.png'
             alt='SoftCast Logo'
             width={32}
             height={32}
           />
           <div className='flex flex-col leading-tight'>
-            <h1 className='font-black text-blue-100 text-xl'>Screencast</h1>
+            <h1 className='font-black text-blue-100 text-2xl'>SkyCast</h1>
             <span className='text-xs text-gray-100 font-medium'>
               by softcolon
             </span>

@@ -11,10 +11,10 @@ const geistKarla = Karla({
 })
 
 export const metadata: Metadata = {
-  title: 'SoftCast',
+  title: 'SkyCast',
   description: 'A Screen Sharing App',
   icons: {
-    icon: '/assets/icons/logo.svg',
+    icon: '/assets/icons/logo.png',
   },
 }
 
