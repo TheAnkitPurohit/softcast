@@ -3,6 +3,7 @@ import { Karla } from 'next/font/google'
 import './globals.css'
 import { satoshi } from '../fonts/font'
 import { ClerkProvider } from '@clerk/nextjs'
+import { Toaster } from 'react-hot-toast'
 
 const geistKarla = Karla({
   variable: '--font-geist-karla',
@@ -29,6 +30,7 @@ export default function Layout({
           className={`${geistKarla.variable} ${satoshi.variable} font-karla antialiased`}
         >
           {children}
+          <Toaster position='top-center' />
         </body>
       </html>
     </ClerkProvider>

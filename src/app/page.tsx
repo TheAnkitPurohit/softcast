@@ -1,11 +1,15 @@
-'use client'
-
 import { SignInButton } from '@clerk/nextjs'
 import Image from 'next/image'
+import React from 'react'
 
-const PublicPage = () => {
+import Footer from '@/components/Footer'
+import Navbar from '@/components/Navbar'
+
+const Page = async () => {
   return (
-    <>
+    <div className='min-h-screen bg-white flex flex-col'>
+      <Navbar />
+
       {/* Hero Section */}
       <section className='wrapper flex flex-col items-center text-center gap-8 pt-16 pb-20'>
         <h2 className='text-4xl md:text-5xl font-black text-blue-100 max-w-3xl leading-tight'>
@@ -15,7 +19,10 @@ const PublicPage = () => {
           Use the power of video and async to accelerate team communication and
           respond quickly.
         </p>
-        <SignInButton>
+        <SignInButton
+          fallbackRedirectUrl={'/videos'}
+          forceRedirectUrl={'/videos'}
+        >
           <button className='px-8 py-4 rounded-4xl bg-primary text-white font-semibold text-lg shadow-10 hover:opacity-90 transition-colors mt-2'>
             Record Now
           </button>
@@ -137,8 +144,10 @@ const PublicPage = () => {
           </div>
         </div>
       </section>
-    </>
+
+      <Footer />
+    </div>
   )
 }
 
-export default PublicPage
+export default Page

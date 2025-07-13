@@ -1,13 +1,24 @@
 'use client'
 
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs'
+import { SignInButton, useAuth, UserButton } from '@clerk/nextjs'
 import Image from 'next/image'
+import Link from 'next/link'
 
-const Navbar = () => {
+interface NavbarProps {
+  isSignedIn?: boolean
+}
+
+const Navbar = ({ isSignedIn }: NavbarProps) => {
+  const auth = useAuth()
+
+  console.log({ auth })
   return (
     <header className='navbar'>
       <nav>
-        <div className='flex items-center gap-2.5'>
+        <Link
+          href={isSignedIn ? '/videos' : '/'}
+          className='flex items-center gap-2.5'
+        >
           <Image
             src='/assets/icons/logo.svg'
             alt='SoftCast Logo'
@@ -20,18 +31,20 @@ const Navbar = () => {
               by softcolon
             </span>
           </div>
-        </div>
+        </Link>
 
-        <SignedIn>
+        {isSignedIn ? (
           <UserButton />
-        </SignedIn>
-        <SignedOut>
-          <SignInButton>
+        ) : (
+          <SignInButton
+            fallbackRedirectUrl={'/videos'}
+            forceRedirectUrl={'/videos'}
+          >
             <button className='px-6 py-2 rounded-4xl bg-primary text-white font-semibold text-base shadow-10 hover:opacity-90 transition-colors'>
               Sign In
             </button>
           </SignInButton>
-        </SignedOut>
+        )}
       </nav>
     </header>
   )
