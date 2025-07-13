@@ -13,10 +13,12 @@ function CopyLinkButton() {
   return (
     <button
       onClick={handleCopy}
-      className='flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition'
+      className='px-5 py-2.5 bg-primary rounded-full inline-flex justify-start items-center gap-1.5'
     >
-      <Copy size={18} />
-      {copied ? 'Copied!' : 'Copy Link'}
+      <Copy size={18} className='text-white' />
+      <span className="text-center justify-center text-white text-sm font-semibold font-['Karla'] leading-tight">
+        {copied ? 'Copied!' : 'Copy'}
+      </span>
     </button>
   )
 }

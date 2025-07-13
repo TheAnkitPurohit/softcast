@@ -69,10 +69,14 @@ const VideoCard = ({
         <h2>{title}</h2>
         {createdAt && (
           <p className='text-sm text-gray-500'>
-            {new Date(createdAt).toLocaleDateString('en-US', {
+            {new Date(createdAt).toLocaleString('en-US', {
+              month: '2-digit',
+              day: '2-digit',
               year: 'numeric',
-              month: 'short',
-              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: true,
             })}
           </p>
         )}

@@ -15,6 +15,8 @@ export const useScreenRecording = () => {
     recordedBlob: null,
     recordedVideoUrl: '',
     recordingDuration: 0,
+    isPaused: false,
+    isRecordingSuccess: false,
   })
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -100,7 +102,10 @@ export const useScreenRecording = () => {
       streamRef.current?._originalStreams
     )
     streamRef.current = null
-    setState((prev) => ({ ...prev, isRecording: false }))
+    setState((prev) => ({
+      ...prev,
+      isRecording: false,
+    }))
   }
 
   const resetRecording = () => {
@@ -111,8 +116,35 @@ export const useScreenRecording = () => {
       recordedBlob: null,
       recordedVideoUrl: '',
       recordingDuration: 0,
+      isPaused: false,
+      isRecordingSuccess: false,
     })
     startTimeRef.current = null
+  }
+
+  const pauseRecording = () => {
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state === 'recording'
+    ) {
+      mediaRecorderRef.current.pause()
+      setState((prev) => ({ ...prev, isPaused: true }))
+    }
+  }
+
+  const resumeRecording = () => {
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state === 'paused'
+    ) {
+      mediaRecorderRef.current.resume()
+      setState((prev) => ({ ...prev, isPaused: false }))
+    }
+  }
+
+  const handleStopAndUpload = async () => {
+    stopRecording()
+    setState((prev) => ({ ...prev, isRecordingSuccess: true }))
   }
 
   return {
@@ -120,5 +152,9 @@ export const useScreenRecording = () => {
     startRecording,
     stopRecording,
     resetRecording,
+    pauseRecording,
+    resumeRecording,
+    isPaused: state.isPaused,
+    handleStopAndUpload,
   }
 }

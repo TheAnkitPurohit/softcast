@@ -19,10 +19,12 @@ function ShareLinkButton() {
     <div className='flex flex-col items-start'>
       <button
         onClick={handleShare}
-        className='flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition'
+        className='px-5 py-2.5 bg-primary rounded-full inline-flex justify-start items-center gap-1.5'
       >
-        <Share2 size={18} />
-        Share
+        <Share2 size={18} className='text-white' />
+        <span className="text-center justify-center text-white text-sm font-semibold font-['Karla'] leading-tight">
+          {shared ? 'Shared!' : 'Share'}
+        </span>
       </button>
       {shared && (
         <span className='text-xs text-green-600 mt-1'>Link copied!</span>

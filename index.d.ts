@@ -225,6 +225,8 @@ declare interface BunnyRecordingState {
   recordedBlob: Blob | null
   recordedVideoUrl: string
   recordingDuration: number
+  isPaused: boolean
+  isRecordingSuccess: boolean
 }
 
 declare interface ExtendedMediaStream extends MediaStream {
