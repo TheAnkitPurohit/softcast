@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 import dbConnect from '@/lib/mongodb'
+import { generateThumbnailFromBuffer } from '@/lib/video-utils'
 import Video from '@/models/Video.model'
 
 const s3Client = new S3Client({
@@ -45,6 +46,49 @@ export async function POST(request: NextRequest) {
     // Convert file to buffer
     const buffer = Buffer.from(await file.arrayBuffer())
 
+    // If the client provided a thumbnail in the upload form, use that first
+    let thumbnailUrl: string | undefined
+    const providedThumb = formData.get('thumbnail') as File | null
+    if (providedThumb && providedThumb.size > 0) {
+      try {
+        const thumbBuffer = Buffer.from(await providedThumb.arrayBuffer())
+        const thumbKey = `thumbnails/${userId}/${Date.now()}-${providedThumb.name || 'thumb.png'}`
+        const thumbUploadCmd = new PutObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET_NAME!,
+          Key: thumbKey,
+          Body: thumbBuffer,
+          ContentType: providedThumb.type || 'image/png',
+        })
+
+        await s3Client.send(thumbUploadCmd)
+
+        thumbnailUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${thumbKey}`
+      } catch (err) {
+        console.warn('Failed to upload provided thumbnail (continuing):', err)
+      }
+    } else {
+      // Try to generate a thumbnail server-side (best-effort)
+      try {
+        const thumb = await generateThumbnailFromBuffer(buffer)
+
+        if (thumb?.buffer) {
+          const thumbKey = `thumbnails/${userId}/${Date.now()}-${thumb.fileName}`
+          const thumbUploadCmd = new PutObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET_NAME!,
+            Key: thumbKey,
+            Body: thumb.buffer,
+            ContentType: 'image/png',
+          })
+
+          await s3Client.send(thumbUploadCmd)
+
+          thumbnailUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${thumbKey}`
+        }
+      } catch (err) {
+        console.warn('Thumbnail generation failed (continuing):', err)
+      }
+    }
+
     // Upload to S3
     const uploadCommand = new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET_NAME!,
@@ -80,6 +124,7 @@ export async function POST(request: NextRequest) {
       s3Url,
       fileSize: file.size,
       contentType: file.type,
+      thumbnailUrl,
       userId,
     })
 

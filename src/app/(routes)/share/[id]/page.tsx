@@ -1,3 +1,5 @@
+import { auth } from '@clerk/nextjs/server'
+
 import CopyLinkButton from '@/app/(routes)/share/[id]/CopyLinkButton'
 import ShareLinkButton from '@/app/(routes)/share/[id]/ShareLinkButton'
 import VideoPlayer from '@/app/(routes)/share/[id]/VideoPlayer'
@@ -10,11 +12,15 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
     return <div>Invalid ID</div>
   }
 
-  const video = await getVideoById(id)
+  // if there's an authenticated user viewing the page, pass their clerk id so we can record the view
+  const { userId } = await auth()
+  const video = await getVideoById(id, userId ?? undefined)
 
   if (!video) {
     return <div>Video not found</div>
   }
+
+  console.log({ video })
 
   const videoUrl = video.s3Url || video.videoUrl
 

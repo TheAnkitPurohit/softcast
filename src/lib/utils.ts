@@ -197,3 +197,67 @@ export function daysAgo(inputDate: Date): string {
 export const createIframeLink = (videoId: string) =>
   `https://iframe.mediadelivery.net/embed/421422/${videoId}?autoplay=true&preload=true`;
 
+
+
+export    const createThumbnailClientSide = async (
+          blob: Blob
+        ): Promise<File | null> => {
+          try {
+            const url = URL.createObjectURL(blob)
+            const videoEl = document.createElement('video')
+            videoEl.preload = 'metadata'
+            videoEl.src = url
+
+            await new Promise<void>((resolve, reject) => {
+              const onLoaded = () => resolve()
+              const onError = () =>
+                reject(new Error('Video load failed for thumbnail'))
+              videoEl.addEventListener('loadedmetadata', onLoaded, {
+                once: true,
+              })
+              videoEl.addEventListener('error', onError, { once: true })
+            })
+
+            const duration = Math.max(
+              0,
+              Math.min(1, Math.floor(videoEl.duration) || 0)
+            )
+            // Seek to a safe timestamp (if video is shorter, 0 will be used)
+            const seekTo = Math.min(1, Math.max(0, duration))
+
+            await new Promise<void>((resolve) => {
+              const onSeek = () => resolve()
+              videoEl.currentTime = seekTo
+              videoEl.addEventListener('seeked', onSeek, { once: true })
+            })
+
+            const canvas = document.createElement('canvas')
+            const targetWidth = 1280
+            const ratio = videoEl.videoWidth
+              ? videoEl.videoHeight / videoEl.videoWidth
+              : 9 / 16
+            const targetHeight = Math.round(targetWidth * ratio)
+            canvas.width = targetWidth
+            canvas.height = targetHeight
+            const ctx = canvas.getContext('2d')
+            if (!ctx) throw new Error('Canvas context is unavailable')
+            ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height)
+
+            const thumbnailBlob: Blob | null = await new Promise((resolve) =>
+              canvas.toBlob((b) => resolve(b), 'image/png')
+            )
+
+            URL.revokeObjectURL(url)
+
+            if (!thumbnailBlob) return null
+            const thumbnailFile = new File(
+              [thumbnailBlob],
+              `thumb-${Date.now()}.png`,
+              { type: 'image/png' }
+            )
+            return thumbnailFile
+          } catch (e) {
+            console.warn('Client-side thumbnail generation failed:', e)
+            return null
+          }
+        }

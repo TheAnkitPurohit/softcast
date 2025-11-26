@@ -22,6 +22,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { ICONS } from '@/constants'
 import { useScreenRecording } from '@/hooks/useScreenRecording'
+import { createThumbnailClientSide } from '@/lib/utils'
 
 const CAPTURE_TYPES = [
   { label: 'Current Tab', value: 'tab' },
@@ -118,8 +119,16 @@ const RecordScreen = () => {
           { type: recordedBlob.type }
         )
 
+        // Try to create a thumbnail on the client (best-effort) and include in form data so server
+        // doesn't have to run ffmpeg. This helps environments where ffmpeg isn't available.
+
         const formData = new FormData()
         formData.append('file', file)
+
+        // generate thumbnail on client (best-effort)
+        const thumbFile = await createThumbnailClientSide(recordedBlob)
+
+        if (thumbFile) formData.append('thumbnail', thumbFile)
 
         const response = await fetch('/api/upload', {
           method: 'POST',

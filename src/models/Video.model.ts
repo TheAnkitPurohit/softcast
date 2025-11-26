@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema, Types } from 'mongoose'
 
 export interface IVideo extends Document {
   title: string
@@ -14,6 +14,7 @@ export interface IVideo extends Document {
   tags: string[]
   views: number
   likes: number
+  viewers?: Types.ObjectId[]
   createdAt: Date
   updatedAt: Date
 }
@@ -69,16 +70,19 @@ const VideoSchema = new Schema<IVideo>(
         trim: true,
       },
     ],
-    views: {
-      type: Number,
-      default: 0,
-      min: [0, 'Views cannot be negative'],
-    },
+
     likes: {
       type: Number,
       default: 0,
       min: [0, 'Likes cannot be negative'],
     },
+    viewers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        index: true,
+      },
+    ],
   },
   {
     timestamps: true,

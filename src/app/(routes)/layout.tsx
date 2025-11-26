@@ -1,5 +1,4 @@
 import { auth } from '@clerk/nextjs/server'
-import { redirect } from 'next/navigation'
 import React from 'react'
 
 import { getUserById } from '@/app/actions'
@@ -11,11 +10,7 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
 
   console.log({ userId })
 
-  if (!userId) {
-    redirect('/')
-  }
-
-  const user = await getUserById(userId)
+  const user = userId ? await getUserById(userId) : null
 
   return (
     <UserProviderWrapper user={user}>
