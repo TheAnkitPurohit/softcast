@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
 import {
-  calculateRecordingDuration,
   cleanupRecording,
   createAudioMixer,
   createRecordingBlob,
@@ -24,6 +23,8 @@ export const useScreenRecording = () => {
   const chunksRef = useRef<Blob[]>([])
   const audioContextRef = useRef<AudioContext | null>(null)
   const startTimeRef = useRef<number | null>(null)
+  const elapsedRef = useRef<number>(0) // milliseconds accumulated before current run
+  const timerRef = useRef<number | null>(null)
 
   useEffect(() => {
     return () => {
@@ -35,7 +36,17 @@ export const useScreenRecording = () => {
 
   const handleRecordingStop = () => {
     const { blob, url } = createRecordingBlob(chunksRef.current)
-    const duration = calculateRecordingDuration(startTimeRef.current)
+    // calculate total duration = elapsed before + current run (if any)
+    const durationMs =
+      elapsedRef.current +
+      (startTimeRef.current ? Date.now() - startTimeRef.current : 0)
+    const duration = Math.round(durationMs / 1000)
+
+    // clear running timer
+    if (timerRef.current) {
+      window.clearInterval(timerRef.current)
+      timerRef.current = null
+    }
 
     setState((prev) => ({
       ...prev,
@@ -44,6 +55,9 @@ export const useScreenRecording = () => {
       recordingDuration: duration,
       isRecording: false,
     }))
+    // reset time trackers
+    startTimeRef.current = null
+    elapsedRef.current = 0
   }
 
   const startRecording = async (
@@ -85,7 +99,24 @@ export const useScreenRecording = () => {
       })
 
       chunksRef.current = []
+      // reset elapsed tracker and set start time
+      elapsedRef.current = 0
       startTimeRef.current = Date.now()
+
+      // start updating duration every second
+      if (timerRef.current) {
+        window.clearInterval(timerRef.current)
+      }
+      timerRef.current = window.setInterval(() => {
+        const now = Date.now()
+        const ms =
+          elapsedRef.current +
+          (startTimeRef.current ? now - startTimeRef.current : 0)
+        setState((prev) => ({
+          ...prev,
+          recordingDuration: Math.floor(ms / 1000),
+        }))
+      }, 1000) as unknown as number
       mediaRecorderRef.current.start(1000)
       setState((prev) => ({ ...prev, isRecording: true }))
       return true
@@ -102,6 +133,13 @@ export const useScreenRecording = () => {
       streamRef.current?._originalStreams
     )
     streamRef.current = null
+    // stop any running duration timer
+    if (timerRef.current) {
+      window.clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+
+    // when stopping, we don't reset elapsedRef here — handleRecordingStop will set recorded duration
     setState((prev) => ({
       ...prev,
       isRecording: false,
@@ -120,6 +158,7 @@ export const useScreenRecording = () => {
       isRecordingSuccess: false,
     })
     startTimeRef.current = null
+    elapsedRef.current = 0
   }
 
   const pauseRecording = () => {
@@ -128,6 +167,15 @@ export const useScreenRecording = () => {
       mediaRecorderRef.current.state === 'recording'
     ) {
       mediaRecorderRef.current.pause()
+      // accumulate elapsed time up to pause
+      if (startTimeRef.current) {
+        elapsedRef.current += Date.now() - startTimeRef.current
+        startTimeRef.current = null
+      }
+      if (timerRef.current) {
+        window.clearInterval(timerRef.current)
+        timerRef.current = null
+      }
       setState((prev) => ({ ...prev, isPaused: true }))
     }
   }
@@ -138,6 +186,19 @@ export const useScreenRecording = () => {
       mediaRecorderRef.current.state === 'paused'
     ) {
       mediaRecorderRef.current.resume()
+      // resume timing
+      startTimeRef.current = Date.now()
+      if (timerRef.current) window.clearInterval(timerRef.current)
+      timerRef.current = window.setInterval(() => {
+        const now = Date.now()
+        const ms =
+          elapsedRef.current +
+          (startTimeRef.current ? now - startTimeRef.current : 0)
+        setState((prev) => ({
+          ...prev,
+          recordingDuration: Math.floor(ms / 1000),
+        }))
+      }, 1000) as unknown as number
       setState((prev) => ({ ...prev, isPaused: false }))
     }
   }

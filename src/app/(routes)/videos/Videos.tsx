@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 
+import AccountInactive from '@/components/AccountInactive'
 import EmptyState from '@/components/EmptyState'
 import LoadingSpinner from '@/components/loader/LoadingSpinner'
 import SharedHeader from '@/components/SharedHeader'
@@ -20,7 +21,7 @@ const Videos = () => {
       const response = await videoService.getVideos()
       setVideos(response?.data?.videos)
     } catch (error) {
-      console.log(error)
+      // Handle error if needed
     } finally {
       setLoading(false)
     }
@@ -32,16 +33,7 @@ const Videos = () => {
 
   // Check if user is active
   if (!userLoading && user && !user.isActive) {
-    return (
-      <main className='wrapper page w-full'>
-        <SharedHeader subHeader='Account Status' title='Account Inactive' />
-        <div className='flex justify-center items-center h-full'>
-          <p className='text-center text-sm text-gray-500'>
-            Your Account is not active. Please ask your admin to activate it.
-          </p>
-        </div>
-      </main>
-    )
+    return <AccountInactive />
   }
 
   return (

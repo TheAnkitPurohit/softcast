@@ -1,4 +1,5 @@
 import { auth } from '@clerk/nextjs/server'
+import { redirect } from 'next/navigation'
 import React from 'react'
 
 import { getUserById } from '@/app/actions'
@@ -8,8 +9,13 @@ import UserProviderWrapper from '@/components/UserProviderWrapper'
 const Layout = async ({ children }: { children: React.ReactNode }) => {
   const { userId } = await auth()
 
-  // Fetch user data if userId exists
-  const user = userId ? await getUserById(userId) : null
+  console.log({ userId })
+
+  if (!userId) {
+    redirect('/')
+  }
+
+  const user = await getUserById(userId)
 
   return (
     <UserProviderWrapper user={user}>

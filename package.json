@@ -7,7 +7,7 @@
     "lint:eslint": "eslint . --fix",
     "format": "prettier --write .",
     "stylelint": "stylelint '**/*.{css,scss}'",
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack --port 3100",
     "build": "next build",
     "start": "next start"
   },

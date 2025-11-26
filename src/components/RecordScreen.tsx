@@ -3,7 +3,7 @@
 import { Trash } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 
 import {
@@ -79,48 +79,7 @@ const RecordScreen = () => {
 
   const [isUploading, setIsUploading] = useState(false)
 
-  const goToUpload = async () => {
-    if (!recordedBlob) return
-
-    setIsUploading(true)
-
-    try {
-      // Create a file from the blob
-      const file = new File(
-        [recordedBlob],
-        `screen-recording-${Date.now()}.webm`,
-        {
-          type: recordedBlob.type,
-        }
-      )
-
-      // Create FormData
-      const formData = new FormData()
-      formData.append('file', file)
-
-      // Upload to S3
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        throw new Error('Upload failed')
-      }
-
-      const result = await response.json()
-
-      if (result.success) {
-        router.push(`/share/${result.data.id}`)
-      } else {
-        throw new Error(result.error || 'Upload failed')
-      }
-    } catch (error) {
-      toast.error('Failed to upload video. Please try again.')
-    } finally {
-      setIsUploading(false)
-    }
-  }
+  // Upload handler — moved into a guarded effect below so it runs exactly once
 
   const handleStartRecording = async () => {
     await startRecording(
@@ -141,16 +100,152 @@ const RecordScreen = () => {
     setIsOpen(false)
   }
 
+  // Ensure the upload starts exactly once after recording successfully stopped and a blob is available.
+  const uploadInProgressRef = useRef(false)
   useEffect(() => {
-    if (isRecordingSuccess && recordedBlob) {
-      goToUpload()
+    if (!isRecordingSuccess || !recordedBlob) return
+    if (uploadInProgressRef.current) return
+
+    uploadInProgressRef.current = true
+
+    const doUpload = async () => {
+      setIsUploading(true)
+      try {
+        // Create a file from the blob
+        const file = new File(
+          [recordedBlob],
+          `screen-recording-${Date.now()}.webm`,
+          { type: recordedBlob.type }
+        )
+
+        const formData = new FormData()
+        formData.append('file', file)
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        })
+        if (!response.ok) throw new Error('Upload failed')
+
+        const result = await response.json()
+        if (result.success) {
+          // navigate to share page — this will unmount the component in most cases
+          router.push(`/share/${result.data.id}`)
+        } else {
+          throw new Error(result.error || 'Upload failed')
+        }
+      } catch (error) {
+        toast.error('Failed to upload video. Please try again.')
+      } finally {
+        setIsUploading(false)
+        // reset recording state so this effect doesn't re-run repeatedly
+        try {
+          resetRecording()
+        } catch (e) {
+          // ignore
+        }
+        uploadInProgressRef.current = false
+      }
     }
-  }, [isRecordingSuccess, recordedBlob, goToUpload])
+
+    doUpload()
+    // include resetRecording in deps so it's safe to call
+  }, [isRecordingSuccess, recordedBlob, resetRecording, router])
+
+  const checkPermissions = async () => {
+    // Helper: try to ask for missing permissions using getUserMedia
+    const requestMissingPermissions = async (
+      needAudio: boolean,
+      needVideo: boolean
+    ) => {
+      try {
+        const constraints: MediaStreamConstraints = {
+          audio: needAudio,
+          video: needVideo,
+        }
+
+        // If no new permissions needed, return false so caller can decide
+        if (!needAudio && !needVideo) return false
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints)
+        // Close tracks immediately — we only requested to get permissions
+        stream.getTracks().forEach((t) => t.stop())
+        return true
+      } catch (e) {
+        return false
+      }
+    }
+
+    try {
+      // If Permissions API is not supported, fallback to requesting media directly
+      if (!navigator.permissions || !navigator.mediaDevices) {
+        const got = await requestMissingPermissions(true, true)
+        if (got) setIsOpen(true)
+        else
+          toast.error(
+            'Permission denied. Please allow camera and microphone permissions and try again.'
+          )
+        return got
+      }
+
+      // Query availability states for camera & microphone
+      // Using `as any` to work with broader PermissionName unions across environments
+      const cameraPerm = await navigator.permissions.query({
+        name: 'camera',
+      })
+      const micPerm = await navigator.permissions.query({
+        name: 'microphone',
+      })
+
+      const cameraGranted = cameraPerm.state === 'granted'
+      const micGranted = micPerm.state === 'granted'
+
+      // If both granted — open modal
+      if (cameraGranted && micGranted) {
+        setIsOpen(true)
+        return true
+      }
+
+      // If either one is already granted, allow open now (we can prompt for the missing permission later)
+      if (cameraGranted || micGranted) {
+        setIsOpen(true)
+        // still attempt to request missing permission in the background (best-effort)
+        requestMissingPermissions(!micGranted, !cameraGranted).then(
+          (succeeded) => {
+            if (!succeeded) {
+              // don't block the UI but inform the user that one of the permissions remains unavailable
+              toast(
+                'Some permissions are still restricted; recordings that require both audio and video may behave differently.'
+              )
+            }
+          }
+        )
+        return true
+      }
+
+      // If none are granted, ask the user for both permissions
+      const requested = await requestMissingPermissions(true, true)
+      if (requested) {
+        setIsOpen(true)
+        return true
+      }
+
+      toast.error(
+        'Permission denied. Please allow camera and microphone permissions and try again.'
+      )
+      return false
+    } catch (err) {
+      toast.error(
+        'Permission check failed. Please confirm your browser allows camera and microphone access for this site.'
+      )
+      return false
+    }
+  }
 
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={checkPermissions}
         className='px-5 py-2.5 bg-primary rounded-full inline-flex justify-start items-center gap-1.5'
       >
         <Image src={ICONS.record} alt='record' width={16} height={16} />
@@ -260,6 +355,8 @@ const RecordScreen = () => {
           {/* First Button: Stop & Upload */}
           <button
             onClick={() => {
+              if (isUploading) return
+              setIsUploading(true)
               handleStopAndUpload()
               setIsOpen(false)
             }}

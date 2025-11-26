@@ -14,7 +14,15 @@ interface VideoQuery {
 // GET /api/videos - Get all videos (with pagination and filtering)
 export async function GET(request: NextRequest) {
   try {
+    const { userId } = await auth()
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     await dbConnect()
+
+    console.log({ userId })
 
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
@@ -29,6 +37,8 @@ export async function GET(request: NextRequest) {
     if (search) {
       query.$text = { $search: search }
     }
+
+    query.userId = userId
 
     // Execute query with pagination
     const videos = await Video.find(query)
