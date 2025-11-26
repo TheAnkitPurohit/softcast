@@ -65,7 +65,7 @@ const RecordScreen = () => {
             label: c.label || 'Camera',
           }))
         )
-      } catch (e) {
+      } catch {
         setMicrophones([])
         setCameras([])
       }
@@ -75,6 +75,10 @@ const RecordScreen = () => {
 
   // Manage a small preview video for the selected webcam inside the modal
   const camPreviewRef = useRef<HTMLVideoElement | null>(null)
+  // Live preview to show while recording (top-right corner)
+  const recordingPreviewRef = useRef<HTMLVideoElement | null>(null)
+  const previewStreamRef = useRef<MediaStream | null>(null)
+  const [modalPreviewActive, setModalPreviewActive] = useState(false)
   useEffect(() => {
     let previewStream: MediaStream | null = null
     const startPreview = async () => {
@@ -89,8 +93,11 @@ const RecordScreen = () => {
         if (camPreviewRef.current) {
           camPreviewRef.current.srcObject = previewStream
           camPreviewRef.current.play().catch(() => {})
+          // keep a live reference so other previews (top-right) can reuse the stream
+          previewStreamRef.current = previewStream
+          setModalPreviewActive(true)
         }
-      } catch (e) {
+      } catch {
         // ignore preview errors
       }
     }
@@ -99,6 +106,8 @@ const RecordScreen = () => {
 
     return () => {
       if (previewStream) previewStream.getTracks().forEach((t) => t.stop())
+      previewStreamRef.current = null
+      setModalPreviewActive(false)
       if (camPreviewRef.current) {
         camPreviewRef.current.pause()
         camPreviewRef.current.srcObject = null
@@ -117,8 +126,43 @@ const RecordScreen = () => {
     resumeRecording,
     isPaused,
     isRecordingSuccess,
+    faceStream,
     handleStopAndUpload,
   } = useScreenRecording()
+
+  // Attach face stream (from hook) to the recording preview while recording
+  useEffect(() => {
+    let attached = false
+    const attach = async () => {
+      try {
+        if (isRecording && faceStream && recordingPreviewRef.current) {
+          recordingPreviewRef.current.srcObject = faceStream
+          recordingPreviewRef.current.play().catch(() => {})
+          attached = true
+        } else if (
+          !isRecording &&
+          isOpen &&
+          includeFace &&
+          previewStreamRef.current &&
+          recordingPreviewRef.current
+        ) {
+          recordingPreviewRef.current.srcObject = previewStreamRef.current
+          recordingPreviewRef.current.play().catch(() => {})
+          attached = true
+        }
+      } catch (_) {
+        // ignore
+      }
+    }
+    attach()
+
+    return () => {
+      if (attached && recordingPreviewRef.current) {
+        recordingPreviewRef.current.pause()
+        recordingPreviewRef.current.srcObject = null
+      }
+    }
+  }, [isRecording, faceStream])
 
   const closeModal = () => {
     resetRecording()
@@ -134,7 +178,11 @@ const RecordScreen = () => {
       captureType,
       selectedMic === 'none' || microphones.length === 0 ? 'none' : selectedMic,
       includeFace,
-      includeFace && selectedCam !== 'none' ? selectedCam : undefined
+      includeFace
+        ? selectedCam === 'none'
+          ? 'default'
+          : selectedCam
+        : undefined
     )
   }
 
@@ -192,14 +240,14 @@ const RecordScreen = () => {
         } else {
           throw new Error(result.error || 'Upload failed')
         }
-      } catch (error) {
+      } catch {
         toast.error('Failed to upload video. Please try again.')
       } finally {
         setIsUploading(false)
         // reset recording state so this effect doesn't re-run repeatedly
         try {
           resetRecording()
-        } catch (e) {
+        } catch {
           // ignore
         }
         uploadInProgressRef.current = false
@@ -229,7 +277,7 @@ const RecordScreen = () => {
         // Close tracks immediately — we only requested to get permissions
         stream.getTracks().forEach((t) => t.stop())
         return true
-      } catch (e) {
+      } catch {
         return false
       }
     }
@@ -292,7 +340,7 @@ const RecordScreen = () => {
         'Permission denied. Please allow camera and microphone permissions and try again.'
       )
       return false
-    } catch (err) {
+    } catch {
       toast.error(
         'Permission check failed. Please confirm your browser allows camera and microphone access for this site.'
       )
@@ -428,7 +476,7 @@ const RecordScreen = () => {
                     <div className='mt-2 w-full flex justify-center items-center'>
                       <video
                         ref={camPreviewRef}
-                        className='w-28 h-20 rounded-md bg-black object-cover border border-neutral-700'
+                        className='w-28 h-28 rounded-full bg-black object-cover border border-neutral-700'
                         playsInline
                         muted
                         autoPlay
@@ -449,6 +497,19 @@ const RecordScreen = () => {
             </div>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Small live face preview (top-right) */}
+      {(modalPreviewActive || (isRecording && faceStream)) && (
+        <div className='fixed bottom-4 right-4 z-[300] w-56 h-56 rounded-full overflow-hidden shadow-lg border-2 border-white/20 bg-black'>
+          <video
+            ref={recordingPreviewRef}
+            muted
+            playsInline
+            autoPlay
+            className='w-full h-full object-cover'
+          />
+        </div>
       )}
 
       {/* Floating Recording Control Bar */}

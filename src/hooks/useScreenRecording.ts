@@ -21,6 +21,10 @@ export const useScreenRecording = () => {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<ExtendedMediaStream | null>(null)
+  const faceStreamRef = useRef<MediaStream | null>(null)
+  const [faceStreamState, setFaceStreamState] = useState<MediaStream | null>(
+    null
+  )
   const chunksRef = useRef<Blob[]>([])
   const audioContextRef = useRef<AudioContext | null>(null)
   const startTimeRef = useRef<number | null>(null)
@@ -81,6 +85,8 @@ export const useScreenRecording = () => {
 
       // If face camera is requested and available, create a composited canvas stream
       if (includeFace && faceStream) {
+        faceStreamRef.current = faceStream
+        setFaceStreamState(faceStream)
         combinedStream = (await createCompositeStream(
           displayStream,
           faceStream,
@@ -153,6 +159,14 @@ export const useScreenRecording = () => {
       streamRef.current,
       streamRef.current?._originalStreams
     )
+    // ensure any face preview stream ref is cleared and tracks stopped
+    if (faceStreamRef.current) {
+      try {
+        faceStreamRef.current.getTracks().forEach((t) => t.stop())
+      } catch {}
+      faceStreamRef.current = null
+      setFaceStreamState(null)
+    }
     streamRef.current = null
     // stop any running duration timer
     if (timerRef.current) {
@@ -231,6 +245,7 @@ export const useScreenRecording = () => {
 
   return {
     ...state,
+    faceStream: faceStreamState,
     startRecording,
     stopRecording,
     resetRecording,
