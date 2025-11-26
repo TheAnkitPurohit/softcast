@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   cleanupRecording,
   createAudioMixer,
+  createCompositeStream,
   createRecordingBlob,
   getMediaStreams,
   setupRecording,
@@ -30,7 +31,7 @@ export const useScreenRecording = () => {
     return () => {
       stopRecording()
       if (state.recordedVideoUrl) URL.revokeObjectURL(state.recordedVideoUrl)
-      audioContextRef.current?.close().catch(console.error)
+      audioContextRef.current?.close().catch(() => {})
     }
   }, [state.recordedVideoUrl])
 
@@ -62,18 +63,38 @@ export const useScreenRecording = () => {
 
   const startRecording = async (
     captureType: CaptureType = 'screen',
-    micDeviceId: MicDeviceId = 'default'
+    micDeviceId: MicDeviceId = 'default',
+    includeFace: boolean = false,
+    faceDeviceId?: string | null
   ) => {
     try {
       stopRecording()
 
-      const { displayStream, micStream, hasDisplayAudio } =
-        await getMediaStreams(captureType, micDeviceId)
-      const combinedStream = new MediaStream() as ExtendedMediaStream
+      const { displayStream, micStream, faceStream, hasDisplayAudio } =
+        await getMediaStreams(
+          captureType,
+          micDeviceId,
+          includeFace ? faceDeviceId : undefined
+        )
 
-      displayStream
-        .getVideoTracks()
-        .forEach((track: MediaStreamTrack) => combinedStream.addTrack(track))
+      let combinedStream: ExtendedMediaStream
+
+      // If face camera is requested and available, create a composited canvas stream
+      if (includeFace && faceStream) {
+        combinedStream = (await createCompositeStream(
+          displayStream,
+          faceStream,
+          {
+            frameRate: 30,
+          }
+        )) as ExtendedMediaStream
+      } else {
+        combinedStream = new MediaStream() as ExtendedMediaStream
+
+        displayStream
+          .getVideoTracks()
+          .forEach((track: MediaStreamTrack) => combinedStream.addTrack(track))
+      }
 
       audioContextRef.current = new AudioContext()
       const audioDestination = createAudioMixer(
@@ -89,6 +110,7 @@ export const useScreenRecording = () => {
 
       combinedStream._originalStreams = [
         displayStream,
+        ...(faceStream ? [faceStream] : []),
         ...(micStream ? [micStream] : []),
       ]
       streamRef.current = combinedStream
@@ -120,8 +142,7 @@ export const useScreenRecording = () => {
       mediaRecorderRef.current.start(1000)
       setState((prev) => ({ ...prev, isRecording: true }))
       return true
-    } catch (error) {
-      console.error('Recording error:', error)
+    } catch (_error) {
       return false
     }
   }

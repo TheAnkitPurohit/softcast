@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
 import { ICONS } from '@/constants'
 import { useScreenRecording } from '@/hooks/useScreenRecording'
 import { createThumbnailClientSide } from '@/lib/utils'
@@ -39,6 +40,11 @@ const RecordScreen = () => {
   const [microphones, setMicrophones] = useState<
     Array<{ deviceId: string; label: string }>
   >([])
+  const [cameras, setCameras] = useState<
+    Array<{ deviceId: string; label: string }>
+  >([])
+  const [selectedCam, setSelectedCam] = useState<string>('none')
+  const [includeFace, setIncludeFace] = useState<boolean>(false)
   const [selectedMic, setSelectedMic] = useState<string>('default')
 
   useEffect(() => {
@@ -46,18 +52,59 @@ const RecordScreen = () => {
       try {
         const devices = await navigator.mediaDevices.enumerateDevices()
         const mics = devices.filter((d) => d.kind === 'audioinput')
+        const cams = devices.filter((d) => d.kind === 'videoinput')
         setMicrophones(
           mics.map((m) => ({
             deviceId: m.deviceId,
             label: m.label || 'Microphone',
           }))
         )
+        setCameras(
+          cams.map((c) => ({
+            deviceId: c.deviceId,
+            label: c.label || 'Camera',
+          }))
+        )
       } catch (e) {
         setMicrophones([])
+        setCameras([])
       }
     }
     if (isOpen) fetchMicrophones()
   }, [isOpen])
+
+  // Manage a small preview video for the selected webcam inside the modal
+  const camPreviewRef = useRef<HTMLVideoElement | null>(null)
+  useEffect(() => {
+    let previewStream: MediaStream | null = null
+    const startPreview = async () => {
+      if (!includeFace) return
+      try {
+        const id =
+          selectedCam && selectedCam !== 'none' ? selectedCam : undefined
+        previewStream = await navigator.mediaDevices.getUserMedia({
+          video: id ? { deviceId: id } : true,
+          audio: false,
+        })
+        if (camPreviewRef.current) {
+          camPreviewRef.current.srcObject = previewStream
+          camPreviewRef.current.play().catch(() => {})
+        }
+      } catch (e) {
+        // ignore preview errors
+      }
+    }
+
+    startPreview()
+
+    return () => {
+      if (previewStream) previewStream.getTracks().forEach((t) => t.stop())
+      if (camPreviewRef.current) {
+        camPreviewRef.current.pause()
+        camPreviewRef.current.srcObject = null
+      }
+    }
+  }, [includeFace, selectedCam, isOpen])
 
   const {
     isRecording,
@@ -85,7 +132,9 @@ const RecordScreen = () => {
   const handleStartRecording = async () => {
     await startRecording(
       captureType,
-      selectedMic === 'none' || microphones.length === 0 ? 'none' : selectedMic
+      selectedMic === 'none' || microphones.length === 0 ? 'none' : selectedMic,
+      includeFace,
+      includeFace && selectedCam !== 'none' ? selectedCam : undefined
     )
   }
 
@@ -340,6 +389,53 @@ const RecordScreen = () => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className='w-full flex flex-col justify-start items-start gap-2'>
+                <div className="justify-center text-gray-500 text-sm font-medium font-['Karla'] leading-tight">
+                  Include face camera
+                </div>
+                <div className='flex items-center gap-3 w-full'>
+                  <Switch
+                    checked={includeFace}
+                    onCheckedChange={(v) => setIncludeFace(Boolean(v))}
+                  />
+                  <div className='text-sm text-gray-400'>
+                    Enable webcam overlay (picture-in-picture)
+                  </div>
+                </div>
+
+                {includeFace && (
+                  <>
+                    <Select value={selectedCam} onValueChange={setSelectedCam}>
+                      <SelectTrigger className='w-full'>
+                        <SelectValue>
+                          {cameras.find((m) => m.deviceId === selectedCam)
+                            ?.label || 'No camera'}
+                        </SelectValue>
+                      </SelectTrigger>
+
+                      <SelectContent className='bg-white'>
+                        <SelectItem value='none'>No camera</SelectItem>
+                        {cameras.map((cam) => (
+                          <SelectItem key={cam.deviceId} value={cam.deviceId}>
+                            {cam.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <div className='mt-2 w-full flex justify-center items-center'>
+                      <video
+                        ref={camPreviewRef}
+                        className='w-28 h-20 rounded-md bg-black object-cover border border-neutral-700'
+                        playsInline
+                        muted
+                        autoPlay
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
               <button

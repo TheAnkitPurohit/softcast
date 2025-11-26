@@ -217,6 +217,7 @@ declare interface EmptyStateProps {
 declare interface MediaStreams {
   displayStream: MediaStream
   micStream: MediaStream | null
+  faceStream?: MediaStream | null
   hasDisplayAudio: boolean
 }
 

@@ -34,7 +34,8 @@ export const getEnv = (key: string): string => {
 
 export const getMediaStreams = async (
   captureType: CaptureType,
-  micDeviceId: MicDeviceId
+  micDeviceId: MicDeviceId,
+  faceDeviceId?: string | null
 ): Promise<MediaStreams> => {
   const displayStream = await navigator.mediaDevices.getDisplayMedia({
     video: {
@@ -54,8 +55,136 @@ export const getMediaStreams = async (
       .forEach((track: MediaStreamTrack) => (track.enabled = true));
   }
 
-  return { displayStream, micStream, hasDisplayAudio };
+  let faceStream: MediaStream | null = null
+  // If a face / webcam device was provided, try to get the video stream
+  if (faceDeviceId && faceDeviceId !== 'none') {
+    try {
+      faceStream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: faceDeviceId },
+        audio: false,
+      })
+    } catch (e) {
+      faceStream = null
+    }
+  }
+
+  return { displayStream, micStream, faceStream, hasDisplayAudio };
 };
+
+/**
+ * Create a composited MediaStream by drawing the display video and an optional
+ * face (webcam) video onto a canvas. The resulting stream will contain a single
+ * video track (canvas output); it does not include audio — caller should add
+ * audio tracks separately (e.g., from an audio mixer destination).
+ */
+export const createCompositeStream = async (
+  displayStream: MediaStream,
+  faceStream: MediaStream | null,
+  options: { frameRate?: number; faceWidthPct?: number; facePadding?: number } = {}
+): Promise<ExtendedMediaStream> => {
+  const frameRate = options.frameRate ?? 30
+  const faceWidthPct = options.faceWidthPct ?? 0.22 // camera will take 22% of width
+  const facePadding = options.facePadding ?? 16
+
+  const displayVideo = document.createElement('video')
+  displayVideo.srcObject = displayStream
+  displayVideo.muted = true
+  displayVideo.playsInline = true
+
+  const faceVideo = faceStream ? document.createElement('video') : null
+  if (faceVideo && faceStream) {
+    faceVideo.srcObject = faceStream
+    faceVideo.muted = true
+    faceVideo.playsInline = true
+  }
+
+  // Wait for metadata so we can size the canvas correctly
+  await new Promise<void>((resolve) => {
+    const onLoaded = () => resolve()
+    displayVideo.addEventListener('loadedmetadata', onLoaded, { once: true })
+    // In some browsers display media may already be ready; call play to trigger metadata in that case
+    displayVideo.play().catch(() => {})
+  })
+
+  // Create canvas sized to display video
+  const canvas = document.createElement('canvas')
+  canvas.width = displayVideo.videoWidth || 1280
+  canvas.height = displayVideo.videoHeight || 720
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('2D canvas not available')
+
+  // If we have face video, ensure metadata loaded
+  if (faceVideo) {
+    try {
+      await new Promise<void>((resolve) => {
+        const onLoaded = () => resolve()
+        faceVideo.addEventListener('loadedmetadata', onLoaded, { once: true })
+        faceVideo.play().catch(() => {})
+      })
+    } catch {}
+  }
+
+  let running = true
+
+  const drawFrame = () => {
+    if (!running) return
+    try {
+      // draw main display
+      ctx.drawImage(displayVideo, 0, 0, canvas.width, canvas.height)
+
+      // draw face video as a rounded rectangle overlay in bottom-right
+      if (faceVideo && faceStream) {
+        const faceW = Math.round(canvas.width * faceWidthPct)
+        const faceH = Math.round((faceVideo.videoHeight / (faceVideo.videoWidth || 1)) * faceW)
+        const x = canvas.width - faceW - facePadding
+        const y = canvas.height - faceH - facePadding
+
+        // rounded rect background
+        const radius = 12
+        ctx.save()
+        ctx.beginPath()
+        ctx.moveTo(x + radius, y)
+        ctx.arcTo(x + faceW, y, x + faceW, y + faceH, radius)
+        ctx.arcTo(x + faceW, y + faceH, x, y + faceH, radius)
+        ctx.arcTo(x, y + faceH, x, y, radius)
+        ctx.arcTo(x, y, x + faceW, y, radius)
+        ctx.closePath()
+        ctx.fillStyle = 'rgba(0,0,0,0.35)'
+        ctx.fill()
+        // draw video inside rounded rect
+        ctx.beginPath()
+        ctx.moveTo(x + radius, y)
+        ctx.arcTo(x + faceW, y, x + faceW, y + faceH, radius)
+        ctx.arcTo(x + faceW, y + faceH, x, y + faceH, radius)
+        ctx.arcTo(x, y + faceH, x, y, radius)
+        ctx.arcTo(x, y, x + faceW, y, radius)
+        ctx.closePath()
+        ctx.clip()
+        ctx.drawImage(faceVideo, x, y, faceW, faceH)
+        ctx.restore()
+      }
+    } catch (e) {
+      // ignore transient draw errors
+    }
+    // schedule next frame
+    setTimeout(() => requestAnimationFrame(drawFrame), 1000 / frameRate)
+  }
+
+  requestAnimationFrame(drawFrame)
+
+  const canvasStream = (canvas as HTMLCanvasElement).captureStream(frameRate)
+  const out = canvasStream as ExtendedMediaStream
+  // keep reference to original streams so cleanup can stop them
+  out._originalStreams = [displayStream, ...(faceStream ? [faceStream] : [])]
+
+  // attach a stop handler to stop drawing loop when canvas track ends
+  const videoTrack = canvasStream.getVideoTracks()[0]
+  videoTrack.addEventListener('ended', () => {
+    running = false
+  })
+
+  return out
+}
 
 export const createAudioMixer = (
   ctx: AudioContext,
