@@ -182,7 +182,8 @@ const RecordScreen = () => {
         ? selectedCam === 'none'
           ? 'default'
           : selectedCam
-        : undefined
+        : undefined,
+      'bottom-right'
     )
   }
 

@@ -69,7 +69,8 @@ export const useScreenRecording = () => {
     captureType: CaptureType = 'screen',
     micDeviceId: MicDeviceId = 'default',
     includeFace: boolean = false,
-    faceDeviceId?: string | null
+    faceDeviceId?: string | null,
+    facePosition: FacePosition = 'bottom-right'
   ) => {
     try {
       stopRecording()
@@ -92,6 +93,7 @@ export const useScreenRecording = () => {
           faceStream,
           {
             frameRate: 30,
+            facePosition,
           }
         )) as ExtendedMediaStream
       } else {

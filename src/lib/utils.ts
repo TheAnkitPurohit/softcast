@@ -88,11 +88,17 @@ export const getMediaStreams = async (
 export const createCompositeStream = async (
   displayStream: MediaStream,
   faceStream: MediaStream | null,
-  options: { frameRate?: number; faceWidthPct?: number; facePadding?: number } = {}
+  options: {
+    frameRate?: number
+    faceWidthPct?: number
+    facePadding?: number
+    facePosition?: FacePosition
+  } = {}
 ): Promise<ExtendedMediaStream> => {
   const frameRate = options.frameRate ?? 30
   const faceWidthPct = options.faceWidthPct ?? 0.22 // camera will take 22% of width
   const facePadding = options.facePadding ?? 16
+  const facePosition = options.facePosition ?? 'top-right'
 
   const displayVideo = document.createElement('video')
   displayVideo.srcObject = displayStream
@@ -146,20 +152,30 @@ export const createCompositeStream = async (
           const faceH = Math.round(
             (faceVideo.videoHeight / (faceVideo.videoWidth || 1)) * faceW
           )
-          const x = canvas.width - faceW - facePadding
-          const y = facePadding
+          const x =
+            facePosition.endsWith('right')
+              ? canvas.width - faceW - facePadding
+              : facePadding
+
+          const y = facePosition.startsWith('top')
+            ? facePadding
+            : canvas.height - faceH - facePadding
 
           // we will draw a circular mask centered inside the face rectangle
           const cx = x + faceW / 2
           const cy = y + faceH / 2
           const radius = Math.min(faceW, faceH) / 2
 
-          // draw soft circular background
+          // draw opaque circular background to fully mask underlying overlays
           ctx.save()
           ctx.beginPath()
           ctx.arc(cx, cy, radius + 6, 0, Math.PI * 2)
-          ctx.fillStyle = 'rgba(0,0,0,0.35)'
+          ctx.fillStyle = 'rgba(0,0,0,1)'
           ctx.fill()
+          // subtle ring around the camera circle matches UI chrome
+          ctx.lineWidth = 3
+          ctx.strokeStyle = 'rgba(255,255,255,0.12)'
+          ctx.stroke()
 
           // clip to perfect circle and draw the face video scaled to fit
           ctx.beginPath()

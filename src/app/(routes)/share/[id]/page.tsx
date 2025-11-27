@@ -23,6 +23,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   console.log({ video })
 
   const videoUrl = video.s3Url || video.videoUrl
+  const { thumbnailUrl } = video
 
   return (
     <main className='wrapper page w-full'>

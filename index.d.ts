@@ -315,3 +315,4 @@ declare interface VideoResponse {
 
 type CaptureType = 'screen' | 'window' | 'tab'
 type MicDeviceId = string | 'none'
+type FacePosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'

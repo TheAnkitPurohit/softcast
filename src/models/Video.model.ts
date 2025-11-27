@@ -4,7 +4,7 @@ export interface IVideo extends Document {
   title: string
   description?: string
   key: string
-  s3Url: string
+  url: string
   fileSize: number
   contentType: string
   duration?: number
@@ -36,7 +36,7 @@ const VideoSchema = new Schema<IVideo>(
       type: String,
       required: [true, 'File name is required'],
     },
-    s3Url: {
+    url: {
       type: String,
       required: [true, 'S3 URL is required'],
     },
