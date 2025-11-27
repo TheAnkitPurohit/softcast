@@ -9,8 +9,7 @@
     "stylelint": "stylelint '**/*.{css,scss}'",
     "dev": "next dev --turbopack --port 3100",
     "build": "next build",
-    "start": "next start",
-    "postinstall": "node node_modules/ffmpeg-static/install.js"
+    "start": "next start"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.844.0",

@@ -1,4 +1,4 @@
-import ffmpegStatic from 'ffmpeg-static'
+import ffmpegStatic from '@ffmpeg-installer/ffmpeg'
 import ffmpeg from 'fluent-ffmpeg'
 import fs from 'fs'
 import os from 'os'
@@ -11,9 +11,9 @@ if (!ffmpegStatic) {
 }
 
 console.log('FFmpeg Binary:', ffmpegStatic)
-console.log('Exists:', fs.existsSync(ffmpegStatic as string))
+console.log('Exists:', fs.existsSync(ffmpegStatic?.path))
 
-ffmpeg.setFfmpegPath(ffmpegStatic as string)
+ffmpeg.setFfmpegPath(ffmpegStatic?.path)
 
 export async function generateThumbnailFromBuffer(
   buffer: Buffer,
