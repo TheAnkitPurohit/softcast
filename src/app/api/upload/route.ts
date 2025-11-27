@@ -3,7 +3,10 @@ import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 import dbConnect from '@/lib/mongodb'
-import { generateThumbnailFromBuffer } from '@/lib/video-utils'
+import {
+  convertWebmToMp4,
+  generateThumbnailFromBuffer,
+} from '@/lib/video-utils'
 import Video from '@/models/Video.model'
 
 const s3Client = new S3Client({
@@ -19,19 +22,14 @@ export async function POST(request: NextRequest) {
     await dbConnect()
 
     const { userId } = await auth()
-
-    if (!userId) {
+    if (!userId)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
 
     const formData = await request.formData()
-    const file = formData.get('file') as File
-
-    if (!file) {
+    const file = formData.get('file') as File | null
+    if (!file)
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
-    }
 
-    // Validate file type
     if (!file.type.startsWith('video/')) {
       return NextResponse.json(
         { error: 'Invalid file type. Only video files are allowed.' },
@@ -39,75 +37,92 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate unique filename
-    const timestamp = Date.now()
-    const key = `screen-recordings/${userId}/${timestamp}-${file.name}`
+    // read bytes
+    let buffer = Buffer.from(await file.arrayBuffer())
+    let contentType = file.type
+    let fileName = file.name || `recording-${Date.now()}.webm`
 
-    // Convert file to buffer
-    const buffer = Buffer.from(await file.arrayBuffer())
+    // convert webm -> mp4 when applicable
+    const shouldConvert =
+      file.type === 'video/webm' || file.name?.toLowerCase().endsWith('.webm')
+    if (shouldConvert) {
+      try {
+        console.log('Trying to convert to mp4')
+        const converted = await convertWebmToMp4(buffer)
+        if (converted && converted.length > 0) {
+          // ensure we assign a Buffer<ArrayBuffer> (create a new Buffer from the converted data)
+          buffer = Buffer.from(converted)
+          contentType = 'video/mp4'
+          fileName = fileName.replace(/\.webm$/i, '') + '.mp4'
+        }
 
-    // If the client provided a thumbnail in the upload form, use that first
+        console.log('mp4 converted')
+      } catch (err) {
+        console.warn('FFmpeg conversion failed, uploading original file:', err)
+      }
+    }
+
+    // Thumbnail: prefer provided thumbnail
     let thumbnailUrl: string | undefined
     const providedThumb = formData.get('thumbnail') as File | null
     if (providedThumb && providedThumb.size > 0) {
       try {
         const thumbBuffer = Buffer.from(await providedThumb.arrayBuffer())
         const thumbKey = `thumbnails/${userId}/${Date.now()}-${providedThumb.name || 'thumb.png'}`
-        const thumbUploadCmd = new PutObjectCommand({
-          Bucket: process.env.AWS_S3_BUCKET_NAME!,
-          Key: thumbKey,
-          Body: thumbBuffer,
-          ContentType: providedThumb.type || 'image/png',
-        })
+        await s3Client.send(
+          new PutObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET_NAME!,
+            Key: thumbKey,
+            Body: thumbBuffer,
+            ContentType: providedThumb.type || 'image/png',
+          })
+        )
 
-        await s3Client.send(thumbUploadCmd)
-
-        thumbnailUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${thumbKey}`
+        thumbnailUrl = `${process.env.AWS_CLOUDFRONT_URL}/${thumbKey}`
       } catch (err) {
         console.warn('Failed to upload provided thumbnail (continuing):', err)
       }
     } else {
-      // Try to generate a thumbnail server-side (best-effort)
       try {
         const thumb = await generateThumbnailFromBuffer(buffer)
-
         if (thumb?.buffer) {
           const thumbKey = `thumbnails/${userId}/${Date.now()}-${thumb.fileName}`
-          const thumbUploadCmd = new PutObjectCommand({
-            Bucket: process.env.AWS_S3_BUCKET_NAME!,
-            Key: thumbKey,
-            Body: thumb.buffer,
-            ContentType: 'image/png',
-          })
+          await s3Client.send(
+            new PutObjectCommand({
+              Bucket: process.env.AWS_S3_BUCKET_NAME!,
+              Key: thumbKey,
+              Body: thumb.buffer,
+              ContentType: 'image/png',
+            })
+          )
 
-          await s3Client.send(thumbUploadCmd)
-
-          thumbnailUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${thumbKey}`
+          thumbnailUrl = `${process.env.AWS_CLOUDFRONT_URL}/${thumbKey}`
         }
       } catch (err) {
         console.warn('Thumbnail generation failed (continuing):', err)
       }
     }
 
-    // Upload to S3
-    const uploadCommand = new PutObjectCommand({
-      Bucket: process.env.AWS_S3_BUCKET_NAME!,
-      Key: key,
-      Body: buffer,
-      ContentType: file.type,
-      Metadata: {
-        originalName: file.name,
-        uploadedAt: new Date().toISOString(),
-        fileSize: file.size.toString(),
-      },
-    })
+    // Upload video
+    const timestamp = Date.now()
+    const key = `screen-recordings/${userId}/${timestamp}-${fileName}`
 
-    await s3Client.send(uploadCommand)
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET_NAME!,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType,
+        Metadata: {
+          originalName: file.name,
+          uploadedAt: new Date().toISOString(),
+          fileSize: buffer.length.toString(),
+        },
+      })
+    )
 
-    // Generate the S3 URL
-    const s3Url = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`
+    const url = `${process.env.AWS_CLOUDFRONT_URL}/${key}`
 
-    // New Message - 7/13/2025 10:20:00 AM
     const title = `New Message - ${new Date().toLocaleString('en-US', {
       month: '2-digit',
       day: '2-digit',
@@ -121,9 +136,9 @@ export async function POST(request: NextRequest) {
     const video = new Video({
       title,
       key,
-      s3Url,
-      fileSize: file.size,
-      contentType: file.type,
+      url,
+      fileSize: buffer.length,
+      contentType,
       thumbnailUrl,
       userId,
     })
@@ -133,9 +148,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'File uploaded successfully',
-      data: {
-        id: savedVideo._id,
-      },
+      data: { id: savedVideo._id },
     })
   } catch (error) {
     console.error('Upload error:', error)

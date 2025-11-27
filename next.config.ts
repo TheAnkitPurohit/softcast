@@ -6,10 +6,14 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'img.clerk.com', pathname: '/**' },
       {
         protocol: 'https',
-        hostname: 'screenify-softcolon.s3.ap-south-1.amazonaws.com',
+        hostname: 'dig6zumu50y36.cloudfront.net',
         pathname: '/**',
       },
     ],
+  },
+
+  experimental: {
+    serverComponentsExternalPackages: ['ffmpeg-static', 'fluent-ffmpeg'],
   },
 }
 

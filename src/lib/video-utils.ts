@@ -4,6 +4,15 @@ import fs from 'fs'
 import os from 'os'
 import path from 'path'
 
+export const runtime = 'nodejs'
+
+if (!ffmpegStatic) {
+  throw new Error('ffmpeg-static path is undefined. Check bundling/runtime.')
+}
+
+console.log('FFmpeg Binary:', ffmpegStatic)
+console.log('Exists:', fs.existsSync(ffmpegStatic as string))
+
 ffmpeg.setFfmpegPath(ffmpegStatic as string)
 
 export async function generateThumbnailFromBuffer(
@@ -47,5 +56,42 @@ export async function generateThumbnailFromBuffer(
     try {
       if (fs.existsSync(thumbFile)) fs.unlinkSync(thumbFile)
     } catch (e) {}
+  }
+}
+
+export async function convertWebmToMp4(buffer: Buffer) {
+  const tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'upload-'))
+  const inPath = path.join(tmpDir, `in-${Date.now()}.webm`)
+  const outPath = path.join(tmpDir, `out-${Date.now()}.mp4`)
+
+  try {
+    await fs.promises.writeFile(inPath, buffer)
+
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(inPath)
+        .outputOptions([
+          '-c:v libx264',
+          '-preset veryfast',
+          '-crf 23',
+          '-c:a aac',
+          '-movflags +faststart',
+        ])
+        .output(outPath)
+        .on('end', () => resolve())
+        .on('error', (err) => reject(err))
+        .run()
+    })
+
+    const outBuf = await fs.promises.readFile(outPath)
+    return outBuf
+  } finally {
+    // best-effort cleanup
+    try {
+      await Promise.all([
+        fs.promises.rm(inPath).catch(() => {}),
+        fs.promises.rm(outPath).catch(() => {}),
+        fs.promises.rmdir(tmpDir).catch(() => {}),
+      ])
+    } catch {}
   }
 }
