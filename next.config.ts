@@ -13,7 +13,11 @@ const nextConfig: NextConfig = {
   },
 
   experimental: {
-    serverComponentsExternalPackages: ['ffmpeg-static', 'fluent-ffmpeg'],
+    serverComponentsExternalPackages: [
+      'ffmpeg-static',
+      'fluent-ffmpeg',
+      '@ffmpeg-installer/ffmpeg',
+    ],
   },
 }
 
