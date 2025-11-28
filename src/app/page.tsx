@@ -1,11 +1,19 @@
 import { SignInButton } from '@clerk/nextjs'
+import { auth } from '@clerk/nextjs/server'
 import Image from 'next/image'
+import { redirect } from 'next/navigation'
 import React from 'react'
 
 import Footer from '@/components/Footer'
 import Navbar from '@/components/Navbar'
 
 const Page = async () => {
+  const { userId } = await auth()
+
+  if (userId) {
+    redirect('/videos')
+  }
+
   return (
     <div className='min-h-screen bg-white flex flex-col'>
       <Navbar />
