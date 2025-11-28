@@ -147,63 +147,63 @@ export const createCompositeStream = async (
       ctx.drawImage(displayVideo, 0, 0, canvas.width, canvas.height)
 
         // draw face video as a circular overlay in top-right
-        if (faceVideo && faceStream) {
-          const faceW = Math.round(canvas.width * faceWidthPct)
-          const faceH = Math.round(
-            (faceVideo.videoHeight / (faceVideo.videoWidth || 1)) * faceW
-          )
-          const x =
-            facePosition.endsWith('right')
-              ? canvas.width - faceW - facePadding
-              : facePadding
+        // if (faceVideo && faceStream) {
+        //   const faceW = Math.round(canvas.width * faceWidthPct)
+        //   const faceH = Math.round(
+        //     (faceVideo.videoHeight / (faceVideo.videoWidth || 1)) * faceW
+        //   )
+        //   const x =
+        //     facePosition.endsWith('right')
+        //       ? canvas.width - faceW - facePadding
+        //       : facePadding
 
-          const y = facePosition.startsWith('top')
-            ? facePadding
-            : canvas.height - faceH - facePadding
+        //   const y = facePosition.startsWith('top')
+        //     ? facePadding
+        //     : canvas.height - faceH - facePadding
 
-          // we will draw a circular mask centered inside the face rectangle
-          const cx = x + faceW / 2
-          const cy = y + faceH / 2
-          const radius = Math.min(faceW, faceH) / 2
+        //   // we will draw a circular mask centered inside the face rectangle
+        //   const cx = x + faceW / 2
+        //   const cy = y + faceH / 2
+        //   const radius = Math.min(faceW, faceH) / 2
 
-          // draw opaque circular background to fully mask underlying overlays
-          ctx.save()
-          ctx.beginPath()
-          ctx.arc(cx, cy, radius + 6, 0, Math.PI * 2)
-          ctx.fillStyle = 'rgba(0,0,0,1)'
-          ctx.fill()
-          // subtle ring around the camera circle matches UI chrome
-          ctx.lineWidth = 3
-          ctx.strokeStyle = 'rgba(255,255,255,0.12)'
-          ctx.stroke()
+        //   // draw opaque circular background to fully mask underlying overlays
+        //   ctx.save()
+        //   ctx.beginPath()
+        //   ctx.arc(cx, cy, radius + 6, 0, Math.PI * 2)
+        //   ctx.fillStyle = 'rgba(0,0,0,1)'
+        //   ctx.fill()
+        //   // subtle ring around the camera circle matches UI chrome
+        //   ctx.lineWidth = 3
+        //   ctx.strokeStyle = 'rgba(255,255,255,0.12)'
+        //   ctx.stroke()
 
-          // clip to perfect circle and draw the face video scaled to fit
-          ctx.beginPath()
-          ctx.arc(cx, cy, radius, 0, Math.PI * 2)
-          ctx.closePath()
-          ctx.clip()
+        //   // clip to perfect circle and draw the face video scaled to fit
+        //   ctx.beginPath()
+        //   ctx.arc(cx, cy, radius, 0, Math.PI * 2)
+        //   ctx.closePath()
+        //   ctx.clip()
 
-          // draw image centered and cover the circle
-          // compute draw dimensions keeping aspect ratio
-          const vidAR = faceVideo.videoWidth / (faceVideo.videoHeight || 1)
-          let dw = faceW
-          let dh = faceH
-          if (vidAR > 1) {
-            // wider than tall — fill width
-            dh = Math.round(faceW / vidAR)
-          } else {
-            // taller than wide — fill height
-            dw = Math.round(faceH * vidAR)
-          }
-          const dx = cx - dw / 2
-          const dy = cy - dh / 2
-          try {
-            ctx.drawImage(faceVideo, dx, dy, dw, dh)
-          } catch (e) {
-            // ignore transient draw issues
-          }
-          ctx.restore()
-        }
+        //   // draw image centered and cover the circle
+        //   // compute draw dimensions keeping aspect ratio
+        //   const vidAR = faceVideo.videoWidth / (faceVideo.videoHeight || 1)
+        //   let dw = faceW
+        //   let dh = faceH
+        //   if (vidAR > 1) {
+        //     // wider than tall — fill width
+        //     dh = Math.round(faceW / vidAR)
+        //   } else {
+        //     // taller than wide — fill height
+        //     dw = Math.round(faceH * vidAR)
+        //   }
+        //   const dx = cx - dw / 2
+        //   const dy = cy - dh / 2
+        //   try {
+        //     ctx.drawImage(faceVideo, dx, dy, dw, dh)
+        //   } catch (e) {
+        //     // ignore transient draw issues
+        //   }
+        //   ctx.restore()
+        // }
     } catch (e) {
       // ignore transient draw errors
     }
@@ -214,6 +214,8 @@ export const createCompositeStream = async (
   requestAnimationFrame(drawFrame)
 
   const canvasStream = (canvas as HTMLCanvasElement).captureStream(frameRate)
+
+  console.log({canvasStream})
   const out = canvasStream as ExtendedMediaStream
   // keep reference to original streams so cleanup can stop them
   out._originalStreams = [displayStream, ...(faceStream ? [faceStream] : [])]
@@ -304,7 +306,7 @@ export const cleanupRecording = (
 export const createRecordingBlob = (
   chunks: Blob[]
 ): { blob: Blob; url: string } => {
-  const blob = new Blob(chunks, { type: "video/webm" });
+  const blob = new Blob(chunks, { type: "video/webm" }); 
   const url = URL.createObjectURL(blob);
   return { blob, url };
 };

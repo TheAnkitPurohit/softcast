@@ -20,7 +20,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { Switch } from '@/components/ui/switch'
 import { ICONS } from '@/constants'
 import { useScreenRecording } from '@/hooks/useScreenRecording'
 import { createThumbnailClientSide } from '@/lib/utils'
@@ -44,7 +43,6 @@ const RecordScreen = () => {
     Array<{ deviceId: string; label: string }>
   >([])
   const [selectedCam, setSelectedCam] = useState<string>('none')
-  const [includeFace, setIncludeFace] = useState<boolean>(false)
   const [selectedMic, setSelectedMic] = useState<string>('default')
 
   useEffect(() => {
@@ -59,12 +57,12 @@ const RecordScreen = () => {
             label: m.label || 'Microphone',
           }))
         )
-        setCameras(
-          cams.map((c) => ({
-            deviceId: c.deviceId,
-            label: c.label || 'Camera',
-          }))
-        )
+
+        const allCams = cams.map((c) => ({
+          deviceId: c.deviceId,
+          label: c.label || 'Camera',
+        }))
+        setCameras(allCams)
       } catch {
         setMicrophones([])
         setCameras([])
@@ -73,16 +71,29 @@ const RecordScreen = () => {
     if (isOpen) fetchMicrophones()
   }, [isOpen])
 
-  // Manage a small preview video for the selected webcam inside the modal
-  const camPreviewRef = useRef<HTMLVideoElement | null>(null)
   // Live preview to show while recording (top-right corner)
   const recordingPreviewRef = useRef<HTMLVideoElement | null>(null)
-  const previewStreamRef = useRef<MediaStream | null>(null)
   const [modalPreviewActive, setModalPreviewActive] = useState(false)
+
+  const showPreview = (previewStream: MediaStream) => {
+    console.log({ recordingPreviewRef, previewStream })
+    if (recordingPreviewRef.current) {
+      console.log({ recordingPreviewRef })
+      recordingPreviewRef.current.srcObject = previewStream
+    }
+  }
+
   useEffect(() => {
     let previewStream: MediaStream | null = null
+
     const startPreview = async () => {
-      if (!includeFace) return
+      console.log({ selectedCam })
+
+      if (selectedCam == 'none') {
+        setModalPreviewActive(false)
+        setInitialPosition()
+        return
+      }
       try {
         const id =
           selectedCam && selectedCam !== 'none' ? selectedCam : undefined
@@ -90,12 +101,14 @@ const RecordScreen = () => {
           video: id ? { deviceId: id } : true,
           audio: false,
         })
-        if (camPreviewRef.current) {
-          camPreviewRef.current.srcObject = previewStream
-          camPreviewRef.current.play().catch(() => {})
+        if (recordingPreviewRef.current) {
+          // camPreviewRef.current.srcObject = previewStream
+          // camPreviewRef.current.play().catch(() => {})
           // keep a live reference so other previews (top-right) can reuse the stream
-          previewStreamRef.current = previewStream
+          // recordingPreviewRef.current = previewStream
+          showPreview(previewStream)
           setModalPreviewActive(true)
+          setPosition({ x: 27, y: window.innerHeight - 250 })
         }
       } catch {
         // ignore preview errors
@@ -106,14 +119,14 @@ const RecordScreen = () => {
 
     return () => {
       if (previewStream) previewStream.getTracks().forEach((t) => t.stop())
-      previewStreamRef.current = null
+      // recordingPreviewRef.current = null
       setModalPreviewActive(false)
-      if (camPreviewRef.current) {
-        camPreviewRef.current.pause()
-        camPreviewRef.current.srcObject = null
+      if (recordingPreviewRef.current) {
+        // previewStreamRef.current.pause()
+        // previewStreamRef.current.srcObject = null
       }
     }
-  }, [includeFace, selectedCam, isOpen])
+  }, [selectedCam, isOpen])
 
   const {
     isRecording,
@@ -135,18 +148,16 @@ const RecordScreen = () => {
     let attached = false
     const attach = async () => {
       try {
-        if (isRecording && faceStream && recordingPreviewRef.current) {
+        if (
+          selectedCam != 'none' &&
+          faceStream &&
+          recordingPreviewRef.current
+        ) {
           recordingPreviewRef.current.srcObject = faceStream
           recordingPreviewRef.current.play().catch(() => {})
           attached = true
-        } else if (
-          !isRecording &&
-          isOpen &&
-          includeFace &&
-          previewStreamRef.current &&
-          recordingPreviewRef.current
-        ) {
-          recordingPreviewRef.current.srcObject = previewStreamRef.current
+        } else if (!isRecording && isOpen && recordingPreviewRef.current) {
+          // recordingPreviewRef.current.srcObject = previewStreamRef.current
           recordingPreviewRef.current.play().catch(() => {})
           attached = true
         }
@@ -167,6 +178,11 @@ const RecordScreen = () => {
   const closeModal = () => {
     resetRecording()
     setIsOpen(false)
+    setCaptureType('tab')
+    setSelectedCam('none')
+    setSelectedMic('default')
+    setInitialPosition()
+    setModalPreviewActive(false)
   }
 
   const [isUploading, setIsUploading] = useState(false)
@@ -177,12 +193,8 @@ const RecordScreen = () => {
     await startRecording(
       captureType,
       selectedMic === 'none' || microphones.length === 0 ? 'none' : selectedMic,
-      includeFace,
-      includeFace
-        ? selectedCam === 'none'
-          ? 'default'
-          : selectedCam
-        : undefined,
+      selectedCam != 'none',
+      selectedCam != 'none' ? selectedCam : undefined,
       'bottom-right'
     )
   }
@@ -349,6 +361,69 @@ const RecordScreen = () => {
     }
   }
 
+  const setInitialPosition = () => {
+    setPosition({ x: 27, y: window.innerHeight - 100 })
+  }
+
+  const [isDragging, setIsDragging] = useState(false)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+  const dragRef = useRef<HTMLDivElement>(null)
+  const offsetRef = useRef({ x: 0, y: 0 })
+
+  useEffect(() => {
+    setInitialPosition()
+    window.addEventListener('resize', setInitialPosition)
+    return () => window.removeEventListener('resize', setInitialPosition)
+  }, [])
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return
+    setIsDragging(true)
+    offsetRef.current = {
+      x: e.clientX - position.x,
+      y: e.clientY - position.y,
+    }
+    e.preventDefault()
+  }
+
+  useEffect(() => {
+    if (!isDragging) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      setPosition((prev) => ({
+        x: Math.max(
+          0,
+          Math.min(e.clientX - offsetRef.current.x, window.innerWidth - 64)
+        ),
+        y: Math.max(
+          0,
+          Math.min(e.clientY - offsetRef.current.y, window.innerHeight - 64)
+        ),
+      }))
+    }
+
+    const handleMouseUp = () => {
+      setIsDragging(false)
+    }
+
+    const handleResize = () => {
+      setPosition((prev) => ({
+        x: Math.max(0, Math.min(prev.x, window.innerWidth - 64)),
+        y: Math.max(0, Math.min(prev.y, window.innerHeight - 64)),
+      }))
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [isDragging])
+
   return (
     <>
       <button
@@ -361,6 +436,99 @@ const RecordScreen = () => {
         </span>
       </button>
 
+      <div
+        ref={dragRef}
+        onMouseDown={handleMouseDown}
+        style={{
+          position: 'fixed',
+          left: `${position.x}px`,
+          top: `${position.y}px`,
+          zIndex: 1000,
+        }}
+        className='select-none'
+      >
+        <div
+          className={`${isOpen ? '' : 'hidden'}  transition-all hover:scale-102 z-[300] flex items-center gap-3`}
+          style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+        >
+          <div
+            className={`${modalPreviewActive || isRecording ? '' : 'hidden'}  w-56 h-56 rounded-full overflow-hidden shadow-lg border-2 border-white/20 bg-black`}
+          >
+            <video
+              ref={recordingPreviewRef}
+              muted
+              playsInline
+              autoPlay
+              className='w-full h-full object-cover'
+            />
+          </div>
+          <div className='  flex items-center gap-3 px-6 py-3 rounded-full  bg-neutral-900 text-white border border-neutral-800 h-fit'>
+            {/* First Button: Stop & Upload */}
+            <button
+              onClick={() => {
+                if (isUploading) return
+                setIsUploading(true)
+                handleStopAndUpload()
+                setIsOpen(false)
+              }}
+              title='Stop & Upload'
+              className='flex items-center justify-center w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 transition-colors shadow-md focus:outline-none'
+              disabled={isUploading}
+            >
+              <svg width='20' height='20' fill='none' viewBox='0 0 20 20'>
+                <rect width='14' height='14' x='3' y='3' rx='3' fill='white' />
+              </svg>
+            </button>
+
+            {/* Second Button: Play/Pause */}
+            <button
+              onClick={isPaused ? resumeRecording : pauseRecording}
+              title={isPaused ? 'Resume Recording' : 'Pause Recording'}
+              className='flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500 hover:bg-yellow-600 transition-colors shadow-md focus:outline-none'
+              disabled={isUploading}
+            >
+              {isPaused ? (
+                // Play icon
+                <svg width='20' height='20' fill='none' viewBox='0 0 20 20'>
+                  <polygon points='6,4 16,10 6,16' fill='white' />
+                </svg>
+              ) : (
+                // Pause icon
+                <svg width='20' height='20' fill='none' viewBox='0 0 20 20'>
+                  <rect x='4' y='4' width='4' height='12' rx='1' fill='white' />
+                  <rect
+                    x='12'
+                    y='4'
+                    width='4'
+                    height='12'
+                    rx='1'
+                    fill='white'
+                  />
+                </svg>
+              )}
+            </button>
+
+            {/* Third Button: Timer */}
+            <span className='mx-2 font-mono text-base tracking-widest select-none'>
+              {formatDuration(recordingDuration)}
+            </span>
+
+            <Separator
+              orientation='vertical'
+              className='h-8 mx-2 bg-neutral-700'
+            />
+
+            <button
+              onClick={handleDeleteRecording}
+              title='Delete Recording'
+              className='flex items-center justify-center w-10 h-10 rounded-full bg-neutral-700 hover:bg-neutral-600 transition-colors shadow-md focus:outline-none'
+            >
+              <Trash className='w-5 h-5' />
+            </button>
+          </div>
+        </div>
+      </div>
+
       {isOpen && !isRecording && (
         <Dialog
           open={isOpen}
@@ -368,7 +536,6 @@ const RecordScreen = () => {
             setIsOpen(open)
             if (!open) {
               closeModal()
-              resetRecording()
             }
           }}
         >
@@ -442,49 +609,25 @@ const RecordScreen = () => {
 
               <div className='w-full flex flex-col justify-start items-start gap-2'>
                 <div className="justify-center text-gray-500 text-sm font-medium font-['Karla'] leading-tight">
-                  Include face camera
+                  Camera
                 </div>
-                <div className='flex items-center gap-3 w-full'>
-                  <Switch
-                    checked={includeFace}
-                    onCheckedChange={(v) => setIncludeFace(Boolean(v))}
-                  />
-                  <div className='text-sm text-gray-400'>
-                    Enable webcam overlay (picture-in-picture)
-                  </div>
-                </div>
+                <Select value={selectedCam} onValueChange={setSelectedCam}>
+                  <SelectTrigger className='w-full'>
+                    <SelectValue>
+                      {cameras.find((m) => m.deviceId === selectedCam)?.label ||
+                        'No camera'}
+                    </SelectValue>
+                  </SelectTrigger>
 
-                {includeFace && (
-                  <>
-                    <Select value={selectedCam} onValueChange={setSelectedCam}>
-                      <SelectTrigger className='w-full'>
-                        <SelectValue>
-                          {cameras.find((m) => m.deviceId === selectedCam)
-                            ?.label || 'No camera'}
-                        </SelectValue>
-                      </SelectTrigger>
-
-                      <SelectContent className='bg-white'>
-                        <SelectItem value='none'>No camera</SelectItem>
-                        {cameras.map((cam) => (
-                          <SelectItem key={cam.deviceId} value={cam.deviceId}>
-                            {cam.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <div className='mt-2 w-full flex justify-center items-center'>
-                      <video
-                        ref={camPreviewRef}
-                        className='w-28 h-28 rounded-full bg-black object-cover border border-neutral-700'
-                        playsInline
-                        muted
-                        autoPlay
-                      />
-                    </div>
-                  </>
-                )}
+                  <SelectContent className='bg-white'>
+                    <SelectItem value='none'>No camera</SelectItem>
+                    {cameras.map((cam) => (
+                      <SelectItem key={cam.deviceId} value={cam.deviceId}>
+                        {cam.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <button
@@ -498,83 +641,6 @@ const RecordScreen = () => {
             </div>
           </DialogContent>
         </Dialog>
-      )}
-
-      {/* Small live face preview (top-right) */}
-      {(modalPreviewActive || (isRecording && faceStream)) && (
-        <div className='fixed bottom-4 right-4 z-[300] w-56 h-56 rounded-full overflow-hidden shadow-lg border-2 border-white/20 bg-black'>
-          <video
-            ref={recordingPreviewRef}
-            muted
-            playsInline
-            autoPlay
-            className='w-full h-full object-cover'
-          />
-        </div>
-      )}
-
-      {/* Floating Recording Control Bar */}
-      {isRecording && (
-        <div
-          className='fixed left-1/2 bottom-8 z-[200] -translate-x-1/2 flex items-center gap-3 px-6 py-3 rounded-full shadow-lg bg-neutral-900 text-white border border-neutral-800'
-          style={{ minWidth: 250 }}
-        >
-          {/* First Button: Stop & Upload */}
-          <button
-            onClick={() => {
-              if (isUploading) return
-              setIsUploading(true)
-              handleStopAndUpload()
-              setIsOpen(false)
-            }}
-            title='Stop & Upload'
-            className='flex items-center justify-center w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 transition-colors shadow-md focus:outline-none'
-            disabled={isUploading}
-          >
-            <svg width='20' height='20' fill='none' viewBox='0 0 20 20'>
-              <rect width='14' height='14' x='3' y='3' rx='3' fill='white' />
-            </svg>
-          </button>
-
-          {/* Second Button: Play/Pause */}
-          <button
-            onClick={isPaused ? resumeRecording : pauseRecording}
-            title={isPaused ? 'Resume Recording' : 'Pause Recording'}
-            className='flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500 hover:bg-yellow-600 transition-colors shadow-md focus:outline-none'
-            disabled={isUploading}
-          >
-            {isPaused ? (
-              // Play icon
-              <svg width='20' height='20' fill='none' viewBox='0 0 20 20'>
-                <polygon points='6,4 16,10 6,16' fill='white' />
-              </svg>
-            ) : (
-              // Pause icon
-              <svg width='20' height='20' fill='none' viewBox='0 0 20 20'>
-                <rect x='4' y='4' width='4' height='12' rx='1' fill='white' />
-                <rect x='12' y='4' width='4' height='12' rx='1' fill='white' />
-              </svg>
-            )}
-          </button>
-
-          {/* Third Button: Timer */}
-          <span className='mx-2 font-mono text-base tracking-widest select-none'>
-            {formatDuration(recordingDuration)}
-          </span>
-
-          <Separator
-            orientation='vertical'
-            className='h-8 mx-2 bg-neutral-700'
-          />
-
-          <button
-            onClick={handleDeleteRecording}
-            title='Delete Recording'
-            className='flex items-center justify-center w-10 h-10 rounded-full bg-neutral-700 hover:bg-neutral-600 transition-colors shadow-md focus:outline-none'
-          >
-            <Trash className='w-5 h-5' />
-          </button>
-        </div>
       )}
     </>
   )
