@@ -2,21 +2,15 @@
 
 import React, { useEffect, useState } from 'react'
 
-import AccountInactive from '@/components/AccountInactive'
 import EmptyState from '@/components/EmptyState'
 import LoadingSpinner from '@/components/loader/LoadingSpinner'
 import SharedHeader from '@/components/SharedHeader'
 import VideoCard from '@/components/VideoCard'
-import authClient from '@/lib/auth-client'
 import videoService from '@/services/video.service'
 
 const Videos = () => {
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(false)
-
-  const { data, isPending } = authClient.useSession()
-
-  const { user } = data || {}
 
   const fetchVideos = async () => {
     try {
@@ -33,11 +27,6 @@ const Videos = () => {
   useEffect(() => {
     fetchVideos()
   }, [])
-
-  // Check if user is active
-  if (!isPending && user && !user?.emailVerified) {
-    return <AccountInactive />
-  }
 
   return (
     <main className='wrapper page w-full'>

@@ -1,5 +1,5 @@
 import { headers } from 'next/headers'
-import { redirect } from 'next/navigation'
+import { redirect, RedirectType } from 'next/navigation'
 import React from 'react'
 
 import Videos from '@/app/(routes)/videos/Videos'
@@ -11,7 +11,7 @@ const Page = async () => {
   })
 
   if (!session) {
-    redirect('/')
+    redirect('/', RedirectType.replace)
   }
 
   return <Videos />

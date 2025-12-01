@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { redirect, RedirectType } from 'next/navigation'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -39,7 +40,8 @@ const Navbar = ({ isSignedIn }: NavbarProps) => {
   }
 
   const handleSignout = async () => {
-    await authClient.signOut()
+    await authClient.signOut({})
+    redirect('/', RedirectType.replace)
   }
 
   return (
