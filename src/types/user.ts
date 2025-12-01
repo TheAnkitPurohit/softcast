@@ -1,8 +1,9 @@
 export interface User {
-  _id: string
-  firstName: string
-  lastName: string
+  id: string
+  createdAt: Date
+  updatedAt: Date
   email: string
-  avatarUrl?: string
-  isActive: boolean
+  emailVerified: boolean
+  name: string
+  image?: string | null | undefined
 }

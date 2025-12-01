@@ -1,16 +1,18 @@
-import { SignInButton } from '@clerk/nextjs'
-import { auth } from '@clerk/nextjs/server'
+import { headers } from 'next/headers'
 import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import React from 'react'
 
 import Footer from '@/components/Footer'
 import Navbar from '@/components/Navbar'
+import { auth } from '@/lib/auth'
 
 const Page = async () => {
-  const { userId } = await auth()
+  const session = await auth.api.getSession({
+    headers: await headers(), // you need to pass the headers object.
+  })
 
-  if (userId) {
+  if (session) {
     redirect('/videos')
   }
 
@@ -27,14 +29,10 @@ const Page = async () => {
           Use the power of video and async to accelerate team communication and
           respond quickly.
         </p>
-        <SignInButton
-          fallbackRedirectUrl={'/videos'}
-          forceRedirectUrl={'/videos'}
-        >
-          <button className='px-8 py-4 rounded-4xl bg-primary text-white font-semibold text-lg shadow-10 hover:opacity-90 transition-colors mt-2'>
-            Record Now
-          </button>
-        </SignInButton>
+
+        <button className='px-8 py-4 rounded-4xl bg-primary text-white font-semibold text-lg shadow-10 hover:opacity-90 transition-colors mt-2'>
+          Record Now
+        </button>
         <div className='w-full flex justify-center'>
           <div className='rounded-2xl shadow-20 bg-gradient-to-br from-[#e3f5fd] to-white p-2 max-w-3xl w-full'>
             <Image

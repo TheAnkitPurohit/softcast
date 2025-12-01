@@ -1,24 +1,24 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  reactStrictMode: false,
   images: {
+    unoptimized: true,
+    dangerouslyAllowSVG: true,
     remotePatterns: [
-      { protocol: 'https', hostname: 'img.clerk.com', pathname: '/**' },
       {
         protocol: 'https',
-        hostname: 'dig6zumu50y36.cloudfront.net',
-        pathname: '/**',
+        hostname: '**',
+        pathname: '**',
       },
     ],
   },
 
-  experimental: {
-    serverComponentsExternalPackages: [
-      'ffmpeg-static',
-      'fluent-ffmpeg',
-      '@ffmpeg-installer/ffmpeg',
-    ],
-  },
+  serverExternalPackages: [
+    'ffmpeg-static',
+    'fluent-ffmpeg',
+    '@ffmpeg-installer/ffmpeg',
+  ],
 }
 
 export default nextConfig

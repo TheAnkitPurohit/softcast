@@ -1,24 +1,52 @@
 import mongoose from 'mongoose'
 
-async function dbConnect() {
-  try {
-    mongoose.connect(process.env.MONGODB_URI!)
-    const { connection } = mongoose
+declare global {
+  // keep a typed global cache for mongoose across module reloads
 
-    connection.on('connected', () => {
-      console.log('MongoDB connected successfully')
-    })
-
-    connection.on('error', (err) => {
-      console.log(
-        'MongoDB connection error. Please make sure MongoDB is running. ' + err
-      )
-      process.exit()
-    })
-  } catch (error) {
-    console.log('Something goes wrong!')
-    console.log(error)
+  var mongoose: {
+    conn: mongoose.Connection | null
+    promise: Promise<mongoose.Connection> | null
   }
+}
+
+const MONGODB_URI = process.env.DATABASE_URL!
+
+if (!MONGODB_URI) {
+  throw new Error('Please define mongo_uri in env variables')
+}
+
+let cached = global.mongoose
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null }
+}
+
+async function dbConnect() {
+  if (cached.conn) {
+    return cached.conn
+  }
+
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: true,
+      maxPoolSize: 10,
+    }
+
+    cached.promise = mongoose
+      .connect(MONGODB_URI, opts)
+      .then(() => mongoose.connection)
+  }
+
+  try {
+    cached.conn = await cached.promise
+
+    console.log('DB Connected')
+  } catch (error) {
+    cached.promise = null
+    throw error
+  }
+
+  return cached.conn
 }
 
 export default dbConnect

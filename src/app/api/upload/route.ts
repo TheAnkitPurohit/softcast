@@ -1,7 +1,8 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
-import { auth } from '@clerk/nextjs/server'
+import { headers } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
+import { auth } from '@/lib/auth'
 import dbConnect from '@/lib/mongodb'
 import {
   convertWebmToMp4,
@@ -19,11 +20,17 @@ const s3Client = new S3Client({
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth.api.getSession({
+      headers: await headers(), // you need to pass the headers object.
+    })
+
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     await dbConnect()
 
-    const { userId } = await auth()
-    if (!userId)
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const userId = session?.user?.id
 
     const formData = await request.formData()
     const file = formData.get('file') as File | null

@@ -1,9 +1,10 @@
-import { auth } from '@clerk/nextjs/server'
+import { headers } from 'next/headers'
 
 import CopyLinkButton from '@/app/(routes)/share/[id]/CopyLinkButton'
 import ShareLinkButton from '@/app/(routes)/share/[id]/ShareLinkButton'
 import VideoPlayer from '@/app/(routes)/share/[id]/VideoPlayer'
 import { getVideoById } from '@/app/actions'
+import { auth } from '@/lib/auth'
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params
@@ -12,8 +13,13 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
     return <div>Invalid ID</div>
   }
 
-  // if there's an authenticated user viewing the page, pass their clerk id so we can record the view
-  const { userId } = await auth()
+  const session = await auth.api.getSession({
+    headers: await headers(), // you need to pass the headers object.
+  })
+
+  const { user } = session || {}
+
+  const userId = user?.id
   const video = await getVideoById(id, userId ?? undefined)
 
   if (!video) {

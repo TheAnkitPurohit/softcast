@@ -1,25 +1,24 @@
-import { auth } from '@clerk/nextjs/server'
+import { headers } from 'next/headers'
 import React from 'react'
 
-import { getUserById } from '@/app/actions'
 import Navbar from '@/components/Navbar'
-import UserProviderWrapper from '@/components/UserProviderWrapper'
+import { auth } from '@/lib/auth'
 
 const Layout = async ({ children }: { children: React.ReactNode }) => {
-  const { userId } = await auth()
+  const session = await auth.api.getSession({
+    headers: await headers(), // you need to pass the headers object.
+  })
 
-  console.log({ userId })
+  const { user } = session || {}
 
-  const user = userId ? await getUserById(userId) : null
+  const userId = user?.id
 
   return (
-    <UserProviderWrapper user={user}>
-      <div className='min-h-screen bg-white flex flex-col'>
-        <Navbar isSignedIn={!!userId} />
+    <div className='min-h-screen bg-white flex flex-col'>
+      <Navbar isSignedIn={!!userId} />
 
-        {children}
-      </div>
-    </UserProviderWrapper>
+      {children}
+    </div>
   )
 }
 

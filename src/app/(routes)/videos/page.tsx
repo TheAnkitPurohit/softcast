@@ -1,13 +1,16 @@
-import { auth } from '@clerk/nextjs/server'
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import React from 'react'
 
 import Videos from '@/app/(routes)/videos/Videos'
+import { auth } from '@/lib/auth'
 
 const Page = async () => {
-  const { userId } = await auth()
+  const session = await auth.api.getSession({
+    headers: await headers(), // you need to pass the headers object.
+  })
 
-  if (!userId) {
+  if (!session) {
     redirect('/')
   }
 

@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Karla } from 'next/font/google'
 import './globals.css'
 import { satoshi } from '../fonts/font'
-import { ClerkProvider } from '@clerk/nextjs'
 import { Toaster } from 'react-hot-toast'
 
 const geistKarla = Karla({
@@ -24,15 +23,13 @@ export default function Layout({
   children: React.ReactNode
 }>) {
   return (
-    <ClerkProvider>
-      <html lang='en'>
-        <body
-          className={`${geistKarla.variable} ${satoshi.variable} font-karla antialiased`}
-        >
-          {children}
-          <Toaster position='top-center' />
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang='en'>
+      <body
+        className={`${geistKarla.variable} ${satoshi.variable} font-karla antialiased`}
+      >
+        {children}
+        <Toaster position='top-center' />
+      </body>
+    </html>
   )
 }

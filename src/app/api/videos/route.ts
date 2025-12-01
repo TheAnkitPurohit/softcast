@@ -1,17 +1,9 @@
-import { S3Client } from '@aws-sdk/client-s3'
-import { auth } from '@clerk/nextjs/server'
+import { headers } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
+import { auth } from '@/lib/auth'
 import dbConnect from '@/lib/mongodb'
 import Video from '@/models/Video.model'
-
-const s3Client = new S3Client({
-  region: process.env.AWS_REGION!,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-})
 
 interface VideoQuery {
   userId?: string
@@ -23,15 +15,15 @@ interface VideoQuery {
 // GET /api/videos - Get all videos (with pagination and filtering)
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth()
+    const session = await auth.api.getSession({
+      headers: await headers(), // you need to pass the headers object.
+    })
 
-    if (!userId) {
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     await dbConnect()
-
-    console.log({ userId })
 
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
@@ -47,7 +39,7 @@ export async function GET(request: NextRequest) {
       query.$text = { $search: search }
     }
 
-    query.userId = userId
+    query.userId = session?.user?.id
 
     // Execute query with pagination
     const videos = await Video.find(query)

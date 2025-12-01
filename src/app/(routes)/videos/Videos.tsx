@@ -7,13 +7,16 @@ import EmptyState from '@/components/EmptyState'
 import LoadingSpinner from '@/components/loader/LoadingSpinner'
 import SharedHeader from '@/components/SharedHeader'
 import VideoCard from '@/components/VideoCard'
-import { useUser } from '@/contexts/UserContext'
+import authClient from '@/lib/auth-client'
 import videoService from '@/services/video.service'
 
 const Videos = () => {
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(false)
-  const { user, isLoading: userLoading } = useUser()
+
+  const { data, isPending } = authClient.useSession()
+
+  const { user } = data || {}
 
   const fetchVideos = async () => {
     try {
@@ -32,7 +35,7 @@ const Videos = () => {
   }, [])
 
   // Check if user is active
-  if (!userLoading && user && !user.isActive) {
+  if (!isPending && user && !user?.emailVerified) {
     return <AccountInactive />
   }
 

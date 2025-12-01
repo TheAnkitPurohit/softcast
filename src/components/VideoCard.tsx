@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 
 import ImageWithFallback from '@/components/ImageWithFallback'
-import { useUser } from '@/contexts/UserContext'
+import authClient from '@/lib/auth-client'
 
 const VideoCard = ({
   id,
@@ -14,7 +14,9 @@ const VideoCard = ({
   views,
   isPublic,
 }: VideoCardProps) => {
-  const { user } = useUser()
+  const { data, isPending } = authClient.useSession()
+
+  const { user } = data || {}
 
   const [copied, setCopied] = useState(false)
 
@@ -43,16 +45,14 @@ const VideoCard = ({
         <div>
           <figure>
             <ImageWithFallback
-              src={user?.avatarUrl ?? ''}
+              src={user?.image ?? ''}
               width={34}
               height={34}
               alt='avatar'
               className='rounded-full aspect-square'
             />
             <figcaption>
-              <h3>
-                {user?.firstName} {user?.lastName}
-              </h3>
+              <h3>{user?.name}</h3>
               <p>{isPublic ? 'Public' : 'Private'}</p>
             </figcaption>
           </figure>

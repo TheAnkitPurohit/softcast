@@ -124,7 +124,12 @@ export const useScreenRecording = () => {
       streamRef.current = combinedStream
 
       mediaRecorderRef.current = setupRecording(combinedStream, {
-        onDataAvailable: (e) => e.data.size && chunksRef.current.push(e.data),
+        onDataAvailable: (e) => {
+          if (e.data.size) {
+            chunksRef.current.push(e.data)
+            console.log(e.data)
+          }
+        },
         onStop: handleRecordingStop,
       })
 

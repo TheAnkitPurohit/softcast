@@ -1,12 +1,47 @@
-import { SignInButton, UserButton } from '@clerk/nextjs'
+'use client'
+
 import Image from 'next/image'
 import Link from 'next/link'
+import { useState } from 'react'
+
+import { Button } from '@/components/ui/button'
+import authClient from '@/lib/auth-client'
 
 interface NavbarProps {
   isSignedIn?: boolean
 }
 
 const Navbar = ({ isSignedIn }: NavbarProps) => {
+  const { data, isPending } = authClient.useSession()
+
+  const { user } = data || {}
+
+  const [loading, setLoading] = useState(false)
+
+  async function handleSocialSignIn() {
+    setLoading(true)
+
+    const { error } = await authClient.signIn.social(
+      {
+        provider: 'google',
+      },
+      {
+        onSuccess(context) {
+          console.log('Sign-in successful!', context)
+        },
+        onError(err) {
+          console.error('Sign-in error:', err)
+        },
+      }
+    )
+
+    setLoading(false)
+  }
+
+  const handleSignout = async () => {
+    await authClient.signOut()
+  }
+
   return (
     <header className='navbar'>
       <nav>
@@ -28,17 +63,22 @@ const Navbar = ({ isSignedIn }: NavbarProps) => {
           </div>
         </Link>
 
-        {isSignedIn ? (
-          <UserButton />
-        ) : (
-          <SignInButton
-            fallbackRedirectUrl={'/videos'}
-            forceRedirectUrl={'/videos'}
+        {user ? (
+          <Button
+            disabled={isPending}
+            onClick={handleSignout}
+            className='px-6 py-2 rounded-4xl bg-primary text-white font-semibold text-base shadow-10 hover:opacity-90 transition-colors'
           >
-            <button className='px-6 py-2 rounded-4xl bg-primary text-white font-semibold text-base shadow-10 hover:opacity-90 transition-colors'>
-              Sign In
-            </button>
-          </SignInButton>
+            Signout
+          </Button>
+        ) : (
+          <Button
+            disabled={isPending}
+            onClick={handleSocialSignIn}
+            className='px-6 py-2 rounded-4xl bg-primary text-white font-semibold text-base shadow-10 hover:opacity-90 transition-colors'
+          >
+            Sign In
+          </Button>
         )}
       </nav>
     </header>
