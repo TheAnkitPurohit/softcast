@@ -61,15 +61,6 @@ const Videos = () => {
           )}
         </>
       )}
-
-      {/* {pagination?.totalPages > 1 && (
-            <Pagination
-              currentPage={pagination.currentPage}
-              totalPages={pagination.totalPages}
-              queryString={query}
-              filterString={filter}
-            />
-          )} */}
     </main>
   )
 }

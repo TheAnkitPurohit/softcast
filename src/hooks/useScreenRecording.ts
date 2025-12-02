@@ -7,7 +7,7 @@ import {
   createRecordingBlob,
   getMediaStreams,
   setupRecording,
-} from '@/lib/utils'
+} from '@/lib/screenRecordingUtils'
 
 export const useScreenRecording = () => {
   const [state, setState] = useState<BunnyRecordingState>({

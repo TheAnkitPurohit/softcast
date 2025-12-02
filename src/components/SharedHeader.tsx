@@ -8,7 +8,7 @@ import DropdownList from '@/components/DropdownList'
 import ImageWithFallback from '@/components/ImageWithFallback'
 import RecordScreen from '@/components/RecordScreen'
 import { filterOptions } from '@/constants'
-import { updateURLParams } from '@/lib/utils'
+import { updateURLParams } from '@/lib/screenRecordingUtils'
 
 const SharedHeader = ({ subHeader, title, userImg }: SharedHeaderProps) => {
   const router = useRouter()

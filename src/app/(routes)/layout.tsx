@@ -1,7 +1,8 @@
 import { headers } from 'next/headers'
 import React from 'react'
 
-import Navbar from '@/components/Navbar'
+import Footer from '@/components/landing/Footer'
+import Navbar from '@/components/landing/Navbar'
 import { auth } from '@/lib/auth'
 
 const Layout = async ({ children }: { children: React.ReactNode }) => {
@@ -14,11 +15,13 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
   const userId = user?.id
 
   return (
-    <div className='min-h-screen bg-white flex flex-col'>
+    <main className='min-h-screen bg-white dark:bg-black text-zinc-900 dark:text-white selection:bg-purple-500/30'>
       <Navbar isSignedIn={!!userId} />
 
       {children}
-    </div>
+
+      <Footer />
+    </main>
   )
 }
 

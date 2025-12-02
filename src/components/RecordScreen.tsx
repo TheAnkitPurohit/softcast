@@ -22,7 +22,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { ICONS } from '@/constants'
 import { useScreenRecording } from '@/hooks/useScreenRecording'
-import { createThumbnailClientSide } from '@/lib/utils'
+import { createThumbnailClientSide } from '@/lib/screenRecordingUtils'
 
 const CAPTURE_TYPES = [
   { label: 'Current Tab', value: 'tab' },

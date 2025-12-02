@@ -25,8 +25,7 @@ export const auth = betterAuth({
             return { data: { ...user, emailVerified: false } }
           }
 
-          console.log({ user })
-          return { data: { ...user, customField: 'value' } }
+          return { data: { ...user } }
         },
       },
     },
