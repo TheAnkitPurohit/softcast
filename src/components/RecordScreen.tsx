@@ -428,12 +428,10 @@ const RecordScreen = () => {
     <>
       <button
         onClick={checkPermissions}
-        className='px-5 py-2.5 bg-primary rounded-full inline-flex justify-start items-center gap-1.5'
+        className='flex items-center gap-2.5 px-5 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]'
       >
-        <Image src={ICONS.record} alt='record' width={16} height={16} />
-        <span className="text-center justify-center text-white text-sm font-semibold font-['Karla'] leading-tight">
-          Record a video
-        </span>
+        <Image src={ICONS.record} alt='record' width={18} height={18} />
+        <span>Record a video</span>
       </button>
 
       <div
@@ -452,7 +450,7 @@ const RecordScreen = () => {
           style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
         >
           <div
-            className={`${modalPreviewActive || isRecording ? '' : 'hidden'}  w-56 h-56 rounded-full overflow-hidden shadow-lg border-2 border-white/20 bg-black`}
+            className={`${modalPreviewActive || isRecording ? '' : 'hidden'} w-56 h-56 rounded-full overflow-hidden shadow-xl border-4 border-white/30 dark:border-white/20 bg-black ring-2 ring-purple-500/50`}
           >
             <video
               ref={recordingPreviewRef}
@@ -462,7 +460,7 @@ const RecordScreen = () => {
               className='w-full h-full object-cover'
             />
           </div>
-          <div className='  flex items-center gap-3 px-6 py-3 rounded-full  bg-neutral-900 text-white border border-neutral-800 h-fit'>
+          <div className='flex items-center gap-3 px-6 py-3 rounded-full bg-zinc-900 dark:bg-zinc-950 text-white border border-zinc-800 dark:border-zinc-700 shadow-xl h-fit backdrop-blur-sm'>
             {/* First Button: Stop & Upload */}
             <button
               onClick={() => {
@@ -472,10 +470,10 @@ const RecordScreen = () => {
                 setIsOpen(false)
               }}
               title='Stop & Upload'
-              className='flex items-center justify-center w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 transition-colors shadow-md focus:outline-none'
+              className='flex items-center justify-center w-11 h-11 rounded-full bg-red-500 hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-400'
               disabled={isUploading}
             >
-              <svg width='20' height='20' fill='none' viewBox='0 0 20 20'>
+              <svg width='22' height='22' fill='none' viewBox='0 0 20 20'>
                 <rect width='14' height='14' x='3' y='3' rx='3' fill='white' />
               </svg>
             </button>
@@ -484,17 +482,17 @@ const RecordScreen = () => {
             <button
               onClick={isPaused ? resumeRecording : pauseRecording}
               title={isPaused ? 'Resume Recording' : 'Pause Recording'}
-              className='flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500 hover:bg-yellow-600 transition-colors shadow-md focus:outline-none'
+              className='flex items-center justify-center w-11 h-11 rounded-full bg-yellow-500 hover:bg-yellow-600 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-yellow-400'
               disabled={isUploading}
             >
               {isPaused ? (
                 // Play icon
-                <svg width='20' height='20' fill='none' viewBox='0 0 20 20'>
+                <svg width='22' height='22' fill='none' viewBox='0 0 20 20'>
                   <polygon points='6,4 16,10 6,16' fill='white' />
                 </svg>
               ) : (
                 // Pause icon
-                <svg width='20' height='20' fill='none' viewBox='0 0 20 20'>
+                <svg width='22' height='22' fill='none' viewBox='0 0 20 20'>
                   <rect x='4' y='4' width='4' height='12' rx='1' fill='white' />
                   <rect
                     x='12'
@@ -508,20 +506,20 @@ const RecordScreen = () => {
               )}
             </button>
 
-            {/* Third Button: Timer */}
-            <span className='mx-2 font-mono text-base tracking-widest select-none'>
+            {/* Timer */}
+            <span className='mx-2 font-mono text-lg font-semibold tracking-wider select-none text-white'>
               {formatDuration(recordingDuration)}
             </span>
 
             <Separator
               orientation='vertical'
-              className='h-8 mx-2 bg-neutral-700'
+              className='h-8 mx-2 bg-zinc-700 dark:bg-zinc-600'
             />
 
             <button
               onClick={handleDeleteRecording}
               title='Delete Recording'
-              className='flex items-center justify-center w-10 h-10 rounded-full bg-neutral-700 hover:bg-neutral-600 transition-colors shadow-md focus:outline-none'
+              className='flex items-center justify-center w-11 h-11 rounded-full bg-zinc-700 hover:bg-zinc-600 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-zinc-500'
             >
               <Trash className='w-5 h-5' />
             </button>
@@ -541,42 +539,49 @@ const RecordScreen = () => {
         >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className='flex items-center gap-2.5'>
+              <DialogTitle className='flex items-center gap-3 pb-2'>
                 <Image
                   src='/assets/icons/logo.png'
                   alt='SoftCast Logo'
-                  width={32}
-                  height={32}
+                  width={36}
+                  height={36}
+                  className='rounded-lg'
                 />
                 <div className='flex flex-col leading-tight'>
-                  <h1 className='font-black text-blue-100 text-xl'>SkyCast</h1>
-                  <span className='text-xs text-gray-100 font-medium'>
+                  <h1 className='font-bold text-zinc-900 dark:text-white text-xl'>
+                    SkyCast
+                  </h1>
+                  <span className='text-xs text-zinc-500 dark:text-zinc-400 font-medium'>
                     by softcolon
                   </span>
                 </div>
               </DialogTitle>
             </DialogHeader>
 
-            <div className='w-full  flex flex-col justify-start items-start gap-5'>
-              <div className='w-full flex flex-col justify-start items-start gap-2'>
-                <div className="justify-center text-gray-500 text-sm font-medium font-['Karla'] leading-tight">
+            <div className='w-full flex flex-col gap-6 pt-2'>
+              <div className='w-full flex flex-col gap-2.5'>
+                <label className='text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
                   Video settings
-                </div>
+                </label>
                 <Select
                   value={captureType}
                   onValueChange={(value) =>
                     setCaptureType(value as CaptureType)
                   }
                 >
-                  <SelectTrigger className='w-full'>
+                  <SelectTrigger className='w-full h-11 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-purple-500 dark:hover:border-purple-500 transition-colors'>
                     <SelectValue>
                       {CAPTURE_TYPES.find((t) => t.value === captureType)
                         ?.label || 'Current Tab'}
                     </SelectValue>
                   </SelectTrigger>
-                  <SelectContent className='bg-white'>
+                  <SelectContent className='bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800'>
                     {CAPTURE_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
+                      <SelectItem
+                        key={type.value}
+                        value={type.value}
+                        className='hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                      >
                         {type.label}
                       </SelectItem>
                     ))}
@@ -584,22 +589,31 @@ const RecordScreen = () => {
                 </Select>
               </div>
 
-              <div className='w-full flex flex-col justify-start items-start gap-2'>
-                <div className="justify-center text-gray-500 text-sm font-medium font-['Karla'] leading-tight">
+              <div className='w-full flex flex-col gap-2.5'>
+                <label className='text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
                   Recording device
-                </div>
+                </label>
                 <Select value={selectedMic} onValueChange={setSelectedMic}>
-                  <SelectTrigger className='w-full'>
+                  <SelectTrigger className='w-full h-11 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-purple-500 dark:hover:border-purple-500 transition-colors'>
                     <SelectValue>
                       {microphones.find((m) => m.deviceId === selectedMic)
                         ?.label || 'No microphone'}
                     </SelectValue>
                   </SelectTrigger>
 
-                  <SelectContent className='bg-white'>
-                    <SelectItem value='none'>No microphone</SelectItem>
+                  <SelectContent className='bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800'>
+                    <SelectItem
+                      value='none'
+                      className='hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    >
+                      No microphone
+                    </SelectItem>
                     {microphones.map((mic) => (
-                      <SelectItem key={mic.deviceId} value={mic.deviceId}>
+                      <SelectItem
+                        key={mic.deviceId}
+                        value={mic.deviceId}
+                        className='hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                      >
                         {mic.label}
                       </SelectItem>
                     ))}
@@ -607,22 +621,31 @@ const RecordScreen = () => {
                 </Select>
               </div>
 
-              <div className='w-full flex flex-col justify-start items-start gap-2'>
-                <div className="justify-center text-gray-500 text-sm font-medium font-['Karla'] leading-tight">
+              <div className='w-full flex flex-col gap-2.5'>
+                <label className='text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
                   Camera
-                </div>
+                </label>
                 <Select value={selectedCam} onValueChange={setSelectedCam}>
-                  <SelectTrigger className='w-full'>
+                  <SelectTrigger className='w-full h-11 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-purple-500 dark:hover:border-purple-500 transition-colors'>
                     <SelectValue>
                       {cameras.find((m) => m.deviceId === selectedCam)?.label ||
                         'No camera'}
                     </SelectValue>
                   </SelectTrigger>
 
-                  <SelectContent className='bg-white'>
-                    <SelectItem value='none'>No camera</SelectItem>
+                  <SelectContent className='bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800'>
+                    <SelectItem
+                      value='none'
+                      className='hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    >
+                      No camera
+                    </SelectItem>
                     {cameras.map((cam) => (
-                      <SelectItem key={cam.deviceId} value={cam.deviceId}>
+                      <SelectItem
+                        key={cam.deviceId}
+                        value={cam.deviceId}
+                        className='hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                      >
                         {cam.label}
                       </SelectItem>
                     ))}
@@ -631,12 +654,10 @@ const RecordScreen = () => {
               </div>
 
               <button
-                className='w-full px-5 py-2.5 bg-primary rounded-full flex justify-center items-center'
+                className='w-full px-5 py-3.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all duration-200 font-semibold shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] text-sm'
                 onClick={handleStartRecording}
               >
-                <div className="text-center justify-center text-white text-sm font-semibold font-['Karla'] leading-tight">
-                  Start recording
-                </div>
+                Start recording
               </button>
             </div>
           </DialogContent>

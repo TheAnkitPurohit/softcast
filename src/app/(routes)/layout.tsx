@@ -1,8 +1,8 @@
 import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
 import React from 'react'
 
-import Footer from '@/components/landing/Footer'
-import Navbar from '@/components/landing/Navbar'
+import Sidebar from '@/components/Sidebar'
 import { auth } from '@/lib/auth'
 
 const Layout = async ({ children }: { children: React.ReactNode }) => {
@@ -10,17 +10,17 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
     headers: await headers(), // you need to pass the headers object.
   })
 
-  const { user } = session || {}
-
-  const userId = user?.id
+  if (!session) {
+    redirect('/')
+  }
 
   return (
-    <main className='min-h-screen bg-white dark:bg-black text-zinc-900 dark:text-white selection:bg-purple-500/30'>
-      <Navbar isSignedIn={!!userId} />
+    <main className='min-h-screen flex bg-white dark:bg-black text-zinc-900 dark:text-white selection:bg-purple-500/30'>
+      <Sidebar />
 
-      {children}
-
-      <Footer />
+      <div className='flex-1 p-5 min-h-screen h-screen overflow-y-scroll'>
+        {children}
+      </div>
     </main>
   )
 }
