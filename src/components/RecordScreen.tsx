@@ -143,6 +143,8 @@ const RecordScreen = () => {
     handleStopAndUpload,
   } = useScreenRecording()
 
+  console.log({ faceStream })
+
   // Attach face stream (from hook) to the recording preview while recording
   useEffect(() => {
     let attached = false
@@ -450,7 +452,7 @@ const RecordScreen = () => {
           style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
         >
           <div
-            className={`${modalPreviewActive || isRecording ? '' : 'hidden'} w-56 h-56 rounded-full overflow-hidden shadow-xl border-4 border-white/30 dark:border-white/20 bg-black ring-2 ring-purple-500/50`}
+            className={`${modalPreviewActive || faceStream ? '' : 'hidden'} w-56 h-56 rounded-full overflow-hidden shadow-xl border-4 border-white/30 dark:border-white/20 bg-black ring-2 ring-purple-500/50`}
           >
             <video
               ref={recordingPreviewRef}

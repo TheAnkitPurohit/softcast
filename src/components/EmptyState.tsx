@@ -2,15 +2,30 @@ import Image from 'next/image'
 
 const EmptyState = ({ icon, title, description }: EmptyStateProps) => {
   return (
-    <section className='empty-state'>
-      <figure>
-        <Image src={icon} alt='icon' width={46} height={46} />
-      </figure>
-      <article>
-        <h1>{title}</h1>
-        <p>{description}</p>
-      </article>
-    </section>
+    <div className='flex flex-col items-center justify-center py-16 px-4'>
+      <div className='flex flex-col items-center text-center max-w-md space-y-4'>
+        {/* Icon */}
+        <div className='relative w-20 h-20 mb-2 opacity-40 dark:opacity-30'>
+          <Image
+            src={icon}
+            alt='Empty state icon'
+            width={80}
+            height={80}
+            className='object-contain grayscale'
+          />
+        </div>
+
+        {/* Title */}
+        <h2 className='text-xl font-bold text-zinc-900 dark:text-white'>
+          {title}
+        </h2>
+
+        {/* Description */}
+        <p className='text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed'>
+          {description}
+        </p>
+      </div>
+    </div>
   )
 }
 

@@ -16,20 +16,13 @@ function ShareLinkButton() {
     }
   }
   return (
-    <div className='flex flex-col items-start'>
-      <button
-        onClick={handleShare}
-        className='px-5 py-2.5 bg-primary rounded-full inline-flex justify-start items-center gap-1.5'
-      >
-        <Share2 size={18} className='text-white' />
-        <span className="text-center justify-center text-white text-sm font-semibold font-['Karla'] leading-tight">
-          {shared ? 'Shared!' : 'Share'}
-        </span>
-      </button>
-      {shared && (
-        <span className='text-xs text-green-600 mt-1'>Link copied!</span>
-      )}
-    </div>
+    <button
+      onClick={handleShare}
+      className='flex items-center gap-2 px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white rounded-lg transition-all duration-200 font-medium text-sm shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98]'
+    >
+      <Share2 className='w-4 h-4' />
+      <span>{shared ? 'Shared!' : 'Share'}</span>
+    </button>
   )
 }
 

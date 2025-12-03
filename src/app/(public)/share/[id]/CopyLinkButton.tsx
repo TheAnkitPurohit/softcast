@@ -1,5 +1,5 @@
 'use client'
-import { Copy } from 'lucide-react'
+import { Check, Copy } from 'lucide-react'
 import React, { useState } from 'react'
 
 function CopyLinkButton() {
@@ -13,12 +13,14 @@ function CopyLinkButton() {
   return (
     <button
       onClick={handleCopy}
-      className='px-5 py-2.5 bg-primary rounded-full inline-flex justify-start items-center gap-1.5'
+      title={copied ? 'Copied!' : 'Copy Link'}
+      className='flex items-center justify-center w-9 h-9 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 active:scale-95'
     >
-      <Copy size={18} className='text-white' />
-      <span className="text-center justify-center text-white text-sm font-semibold font-['Karla'] leading-tight">
-        {copied ? 'Copied!' : 'Copy'}
-      </span>
+      {copied ? (
+        <Check className='w-4 h-4 text-green-600 dark:text-green-400' />
+      ) : (
+        <Copy className='w-4 h-4' />
+      )}
     </button>
   )
 }

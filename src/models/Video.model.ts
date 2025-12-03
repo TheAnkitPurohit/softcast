@@ -9,7 +9,8 @@ export interface IVideo extends Document {
   contentType: string
   duration?: number
   thumbnailUrl?: string
-  userId: string
+  userId: mongoose.Types.ObjectId
+  userName: string
   isPublic: boolean
   tags: string[]
   views: number
@@ -56,10 +57,18 @@ const VideoSchema = new Schema<IVideo>(
       type: String,
     },
     userId: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: 'User',
       required: [true, 'User ID is required'],
       index: true,
     },
+
+    userName: {
+      type: String,
+      required: [true, 'File name is required'],
+      trim: true,
+    },
+
     isPublic: {
       type: Boolean,
       default: true,

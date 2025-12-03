@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
     await dbConnect()
 
     const userId = session?.user?.id
+    const userName = session?.user?.name
 
     const formData = await request.formData()
     const file = formData.get('file') as File | null
@@ -148,6 +149,7 @@ export async function POST(request: NextRequest) {
       contentType,
       thumbnailUrl,
       userId,
+      userName,
     })
 
     const savedVideo = await video.save()
